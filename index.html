@@ -1,0 +1,2877 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Türkçe ve mobil uyumlu, IndexedDB tabanlı PWA ön muhasebe ve stok sistemi">
+    <title class="app-name-title">EFE GIDA - Gelişmiş Ön Muhasebe Sistemi</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiTXVoYVNpcyDDlm4gTXVoYXNlYmUiLCJzaG9ydF9uYW1lIjoiTXVoYVNpcyIsImRlc2NyaXB0aW9uIjoiVMO8cmvDp2UgdmUgbW9iaWwgdXl1bWx1LCBJbmRleGVkREIgdGFiYW5sMSBQV0Egw7ZuIG11aGFzZWJlIHNpc3RlbWkiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2YxZjVmOSIsInRoZW1lX2NvbG9yIjoiIzI1NjNlYiIsImljb25zIjpbeyJzcmMiOiJodHRwczovL3BsYWNlaG9sZC5jby8xOTJ4MTkyLzI1NjNlYi9mZmZmZmY/dGV4dD1NIiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3BuZyJ9LHsic3JjIjoiaHR0cHM6Ly9wbGFjZWhvbGQuY28vNTEyeDUxMi8yNTYzZWIvZmZmZmZmP3RleHQ9TSIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9wbmcifV19">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/2563eb/ffffff?text=M">
+
+
+    <!-- Harici Kütüphaneler -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- SheetJS for Excel Import/Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- html2canvas for Image Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --color-primary: #2563eb;
+            --color-primary-light: #3b82f6;
+            --color-primary-dark: #1d4ed8;
+            --color-secondary: #ffffff;
+            --color-text: #1e293b;
+            --color-text-light: #64748b;
+            --color-background: #f1f5f9;
+            --color-border: #e2e8f0;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --color-info: #0ea5e9;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s ease;
+            --radius-sm: 0.25rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        html, body {
+            overflow-x: hidden;
+        }
+        body { background-color: var(--color-background); color: var(--color-text); line-height: 1.6; padding-top: 70px; }
+        .container { width: 100%; max-width: 1400px; margin: 0 auto; padding: 0 15px; }
+        
+        /* --- Login Sayfası --- */
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(147, 197, 253, 0.2) 100%); padding-top: 0; }
+        .login-card { background: var(--color-secondary); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 2.5rem; width: 100%; max-width: 420px; transition: var(--transition); border-top: 4px solid var(--color-primary); }
+        .login-header { text-align: center; margin-bottom: 2rem; }
+        .login-header h1 { font-size: 2.2rem; color: var(--color-primary); margin-bottom: 0.5rem; font-weight: 600; }
+        .login-header p { color: var(--color-text-light); font-size: 1.1rem; }
+        .login-form .form-group { margin-bottom: 1.5rem; }
+        .login-form label { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-weight: 500; color: var(--color-text); font-size: 0.9rem; }
+        .login-form input { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: 1rem; transition: var(--transition); background-color: #f8fafc; }
+        .login-form input:focus { outline: none; border-color: var(--color-primary-light); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); background-color: var(--color-secondary); }
+        .login-form button { width: 100%; padding: 0.85rem; background: var(--color-primary); color: white; border: none; border-radius: var(--radius-md); font-size: 1rem; font-weight: 500; cursor: pointer; transition: var(--transition); box-shadow: var(--shadow-sm); display: inline-flex; justify-content: center; align-items: center; gap: 0.5rem;}
+        .login-form button:hover { background: var(--color-primary-dark); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        
+        /* --- Ana Arayüz --- */
+        .dashboard-container { display: none; }
+        .header { background: var(--color-secondary); color: var(--color-text); padding: 0.5rem 0; box-shadow: var(--shadow-md); border-bottom: 1px solid var(--color-border); position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; }
+        .header .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: nowrap; }
+        .logo { display: flex; align-items: center; gap: 0.75rem; }
+        .logo img { max-height: 40px; border-radius: var(--radius-sm); }
+        .logo h1 { font-size: 1.25rem; font-weight: 600; color: var(--color-primary); }
+        .navigation { display: flex; align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .navigation::-webkit-scrollbar { display: none; }
+        .navigation ul { display: flex; flex-wrap: nowrap; list-style: none; margin: 0; padding: 0; gap: 0.1rem; }
+        .navigation a { color: var(--color-text-light); text-decoration: none; font-weight: 500; display: flex; align-items: center; flex-direction: column; gap: 0.2rem; padding: 0.4rem; border-radius: var(--radius-md); transition: var(--transition); white-space: nowrap; font-size: 0.7rem; width: 70px; text-align: center; }
+        .navigation a .fa, .navigation a .fas { font-size: 1.1rem; transition: color 0.3s ease; }
+        .navigation a:hover, .navigation a.active { color: var(--color-primary); background-color: rgba(59, 130, 246, 0.1); }
+        .navigation a:hover .fas, .navigation a.active .fas { color: var(--color-primary) !important; }
+        .navigation a#logoutBtn { color: var(--color-danger); }
+        .navigation a#logoutBtn:hover { background-color: rgba(239, 68, 68, 0.1); }
+        
+        .main-content { width: 100%; padding: 1.5rem 1rem; }
+        .module-container { display: none; animation: fadeIn 0.5s ease; }
+        .module-container.active { display: block; }
+        .module-container h2 { font-size: 1.6rem; font-weight: 600; margin-bottom: 1.5rem; color: var(--color-text); display: flex; align-items: center; gap: 0.75rem; }
+        
+        /* --- Bileşenler --- */
+        .card { 
+            background: var(--color-secondary); 
+            border-radius: var(--radius-lg); 
+            box-shadow: var(--shadow-lg); 
+            padding: 1.25rem; 
+            margin-bottom: 1.5rem; 
+            border: 1px solid var(--color-border);
+            border-top: 3px solid var(--color-primary);
+        }
+        .card-title { font-size: 1.2rem; margin-bottom: 1rem; color: var(--color-text); font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+        .card-header { margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+        
+        .table-responsive { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--color-border); width: 100%; }
+        table { width: 100%; border-collapse: collapse; background-color: var(--color-secondary); }
+        table th, table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--color-border); white-space: nowrap; }
+        table th { background-color: #f8fafc; font-weight: 600; color: var(--color-text); }
+        table tr:last-child td { border-bottom: none; }
+        table tr:hover { background-color: #f8fafc; }
+        .bakiye-borc { color: var(--color-danger); font-weight: bold; }
+        .bakiye-alacak { color: var(--color-success); font-weight: bold; }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.7rem 1.4rem; background: var(--color-primary); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; text-decoration: none; font-size: 0.9rem; font-weight: 500; box-shadow: var(--shadow-sm); transition: var(--transition); }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: var(--radius-sm); }
+        .btn-success { background: var(--color-success); }
+        .btn-warning { background: var(--color-warning); color: #ffffff; }
+        .btn-danger { background: var(--color-danger); }
+        .btn-info { background: var(--color-info); }
+        .btn-secondary { background-color: #64748b; color: white;}
+
+        
+        .form-row { display: flex; flex-wrap: wrap; margin-right: -10px; margin-left: -10px; }
+        .form-group { flex: 1 1 100%; padding: 0 10px; margin-bottom: 1.25rem; }
+        .form-group label { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-group-thirds { flex: 1 1 100%; }
+        .form-control { display: block; width: 100%; padding: 0.65rem 1rem; font-size: 1rem; line-height: 1.5; color: var(--color-text); background-color: #f8fafc; background-clip: padding-box; border: 1px solid var(--color-border); border-radius: var(--radius-md); transition: var(--transition); }
+        .form-control:focus { outline: none; border-color: var(--color-primary-light); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); background-color: var(--color-secondary); }
+        textarea.form-control { min-height: 100px; resize: vertical; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(4px); animation: fadeIn 0.3s; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; padding: 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); width: 90%; max-width: 500px; text-align: left; transform: scale(0.95); transition: transform 0.3s ease; display: flex; flex-direction: column; max-height: 90vh; }
+        .modal-body { overflow-y: auto; }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        .modal-title { font-size: 1.5rem; margin-bottom: 1rem; font-weight: 600; text-align: center; }
+        .modal-content p { margin-bottom: 2rem; font-size: 1.1rem; color: var(--color-text); text-align: center; }
+        .modal-buttons { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
+        .modal-buttons button { min-width: 100px; }
+        .modal-overlay.modal-lg .modal-content { max-width: 900px; }
+
+        #toastContainer { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background-color: var(--color-text); color: white; padding: 1rem 1.5rem; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 1rem; opacity: 0; transform: translateX(100%); animation: slideIn 0.5s forwards; }
+        .toast.success { background-color: var(--color-success); }
+        .toast.error { background-color: var(--color-danger); }
+        .toast.info { background-color: var(--color-info); }
+        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideOut { to { opacity: 0; transform: translateX(100%); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .toast.hide { animation: slideOut 0.5s forwards; }
+        
+        @media (min-width: 768px) { .form-group-half { flex: 0 0 50%; max-width: 50%; } .main-content { padding: 2rem; } .form-group-thirds { flex: 0 0 33.333%; max-width: 33.333%; } }
+        @media (max-width: 767px) { .logo h1 { display: none; } }
+        
+        .product-name-display { text-transform: uppercase; font-weight: 700; color: var(--color-primary-dark); }
+        .status-badge { padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 500; color: white; }
+        .status-portfolio { background-color: var(--color-info); }
+        .status-paid { background-color: var(--color-success); }
+        .status-protested { background-color: var(--color-danger); }
+        .payment-due { background-color: rgba(245, 158, 11, 0.1); }
+        .payment-overdue { background-color: rgba(239, 68, 68, 0.1); }
+        .payment-paid { background-color: rgba(16, 185, 129, 0.1); color: #059669; }
+
+
+        /* --- Dashboard & Hubs --- */
+        .stats-container { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+        @media (min-width: 640px) { .stats-container { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); } }
+        .stats-card { padding: 1.5rem; background: var(--color-secondary); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--color-border); position: relative; overflow: hidden; border-top: none; }
+        .stats-card::before { content: ''; position: absolute; top: 0; left: 0; width: 6px; height: 100%; transition: var(--transition); }
+        .stats-card.customers::before { background-color: var(--color-info); }
+        .stats-card.products::before { background-color: var(--color-warning); }
+        .stats-card.sales::before { background-color: var(--color-success); }
+        .stats-card.debt::before { background-color: var(--color-danger); }
+        .stats-card.profit::before { background-color: #8b5cf6; }
+        .stats-card h3 { margin-bottom: 0.5rem; font-size: 1rem; color: var(--color-text-light); font-weight: 500; }
+        .stats-card .value { font-size: 1.8rem; font-weight: 700; color: var(--color-text); }
+        .stats-card .sub-value { font-size: 0.9rem; color: var(--color-text-light); }
+
+
+        .dashboard-shortcuts { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
+        .shortcut-card { background: var(--color-secondary); border-radius: var(--radius-md); padding: 1.5rem 1rem; text-align: center; cursor: pointer; transition: var(--transition); border: 1px solid var(--color-border); }
+        .shortcut-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: var(--color-primary); }
+        .shortcut-card i { font-size: 2.5rem; color: var(--color-primary); margin-bottom: 1rem; }
+        .shortcut-card span { font-weight: 500; color: var(--color-text); display: block; }
+        
+        /* --- Ekstre & Fatura --- */
+        .invoice-container, .ekstre-container { background-color: #fff; padding: 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--color-border); border-top: none; }
+        .invoice-actions, .ekstre-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); }
+        .ekstre-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .ekstre-table th, .ekstre-table td { padding: 0.75rem; text-align: left; }
+        .ekstre-table thead th { background-color: #f8fafc; font-weight: 600; border-bottom: 2px solid var(--color-border); }
+        .ekstre-table tbody tr.transaction-row td { border-bottom: 1px solid var(--color-border); font-weight: 500; }
+        .ekstre-table tbody tr.transaction-row:hover { background-color: #f8fafc; }
+        .ekstre-table .text-right { text-align: right; }
+        .ekstre-table .product-details-row td { padding: 0; border-bottom: 1px solid var(--color-border); }
+        .ekstre-sub-table { width: 100%; background-color: #fdfdfd; }
+        .ekstre-sub-table th, .ekstre-sub-table td { padding: 0.6rem 0.75rem; border: none; }
+        .ekstre-sub-table th { font-weight: 500; color: var(--color-text-light); background-color: #f8fafc; padding-left: 2rem; }
+        .ekstre-sub-table td { padding-left: 2rem; color: var(--color-text-light); }
+        .ekstre-sub-table tr:not(:last-child) td { border-bottom: 1px dashed #eef2f7; }
+        
+        .template-editor-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; padding: 0.5rem; background-color: #f8fafc; border: 1px solid var(--color-border); border-bottom: none; border-top-left-radius: var(--radius-md); border-top-right-radius: var(--radius-md); }
+        .template-editor-toolbar button, .template-editor-toolbar select { background-color: white; border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 0.25rem 0.5rem; cursor: pointer; }
+        #templateEditor { width: 100%; min-height: 400px; font-family: 'Courier New', Courier, monospace; font-size: 0.9rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); border-top-left-radius: 0; border-top-right-radius: 0; padding: 1rem; }
+
+        .product-history-clickable-row { cursor: pointer; }
+        .loading-indicator { text-align: center; padding: 2rem; font-size: 1.2rem; color: var(--color-text-light); }
+
+        /* --- Satış Sayfası Yeniden Tasarım --- */
+        .sale-item-entry-box {
+            border: 2px solid var(--color-danger);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        #saleProductEntry .form-row {
+            align-items: flex-end;
+        }
+        
+        #reportsModule .report-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        /* --- Yazdırma Stilleri --- */
+        @media print {
+          body * { visibility: hidden; }
+          .printable-area, .printable-area * { visibility: visible; }
+          .printable-area { 
+            position: absolute; left: 0; top: 0; width: 100%; height: auto; 
+            box-shadow: none !important; border: none !important; 
+            padding: 40px !important; margin: 0 !important;
+          }
+          .header, .main-content > h2, .modal-overlay, .navigation, #toastContainer, .ekstre-actions, .invoice-actions, #printReportBtn { display: none !important; }
+          .ekstre-container, .invoice-container { box-shadow: none !important; border: none !important; padding: 0 !important; }
+          .ekstre-table { font-size: 9pt; }
+          .ekstre-table th, .ekstre-table td { padding: 5px; }
+          .ekstre-sub-table { font-size: 8pt; }
+        }
+        .printable-area {
+            padding: 1.5rem; /* For html2canvas */
+        }
+    </style>
+</head>
+<body>
+    <div id="toastContainer"></div>
+    
+    <div id="confirmationModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title" id="modalTitle">Onay</h3>
+            <p id="modalMessage">Bu işlemi yapmak istediğinizden emin misiniz?</p>
+            <div class="modal-buttons">
+                <button class="btn btn-danger" id="modalConfirmBtn">Evet</button>
+                <button class="btn" id="modalCancelBtn">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="invoiceModal" class="modal-overlay modal-lg">
+        <div class="modal-content">
+            <div class="modal-body" id="invoiceModalContent">
+                <!-- Fatura içeriği buraya dinamik olarak eklenecek -->
+            </div>
+        </div>
+    </div>
+
+    <div id="invoiceNotesModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Fatura Notu Ekle</h3>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="invoiceNotesTextarea">Notunuz</label>
+                    <textarea id="invoiceNotesTextarea" class="form-control" rows="6"></textarea>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-success" id="saveInvoiceNoteBtn">Kaydet</button>
+                <button class="btn" id="cancelInvoiceNoteBtn">İptal</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="quickTransactionModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title" id="quickTransactionModalTitle">Hızlı İşlem</h3>
+            <form id="quickTransactionForm">
+                 <input type="hidden" id="quickTransactionType">
+                 <div class="form-group">
+                     <label for="quickTransactionContactType">İşlem Tarafı</label>
+                     <select class="form-control" id="quickTransactionContactType">
+                        <option value="customer">Müşteri (Tahsilat)</option>
+                        <option value="supplier">Tedarikçi (Ödeme)</option>
+                        <option value="none">Diğer Gider</option>
+                     </select>
+                 </div>
+                 <div class="form-group" id="quickTransactionContactGroup">
+                     <label for="quickTransactionContact">İlgili Cari</label>
+                     <select class="form-control" id="quickTransactionContact"></select>
+                 </div>
+                 <div class="form-group">
+                     <label for="quickTransactionAmount">Tutar (₺)</label>
+                     <input type="number" step="0.01" class="form-control" id="quickTransactionAmount" required>
+                 </div>
+                 <div class="form-group">
+                     <label for="quickTransactionDescription">Açıklama</label>
+                     <input type="text" class="form-control" id="quickTransactionDescription" required>
+                 </div>
+                 <div class="form-group">
+                     <label for="quickTransactionDate">Tarih</label>
+                     <input type="date" class="form-control" id="quickTransactionDate" required>
+                 </div>
+                 <div class="modal-buttons">
+                    <button type="submit" class="btn btn-success">Kaydet</button>
+                    <button type="button" class="btn" id="quickTransactionCancelBtn">İptal</button>
+                 </div>
+            </form>
+        </div>
+    </div>
+
+
+    <div class="login-container" id="loginPage">
+        <div class="login-card">
+            <div class="login-header">
+                <h1 class="app-name">EFE GIDA</h1>
+                <p>Ön Muhasebe Sistemi</p>
+            </div>
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="username"><i class="fas fa-user"></i> Kullanıcı Adı</label>
+                    <input type="text" id="username" name="username" required value="admin">
+                </div>
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Şifre</label>
+                    <input type="password" id="password" name="password" required value="1234">
+                </div>
+                <button type="submit"><i class="fas fa-sign-in-alt"></i> Giriş Yap</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="dashboard-container" id="dashboardPage">
+        <header class="header">
+            <div class="container">
+                <div class="logo">
+                    <img id="appLogo" src="https://res.cloudinary.com/glide/image/fetch/f_auto,h_150,c_limit/https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fglide-prod.appspot.com%2Fo%2Ficon-images%252Fanonymous-01bc4230-ccc1-4021-aa3d-1e76bda4930d.png%3Falt%3Dmedia%26token%3D5b04d4b6-eb49-4896-b994-c7c52fcabd46" alt="Logo">
+                    <h1><span class="app-name">EFE GIDA</span></h1>
+                </div>
+                <nav class="navigation" id="mainNav">
+                    <ul>
+                        <li><a href="#" data-module="dashboard" class="active"><i class="fas fa-home"></i> <span>Anasayfa</span></a></li>
+                        <li><a href="#" data-module="customers"><i class="fas fa-users"></i> <span>Müşteriler</span></a></li>
+                        <li><a href="#" data-module="suppliers"><i class="fas fa-truck"></i> <span>Tedarikçi</span></a></li>
+                        <li><a href="#" data-module="products"><i class="fas fa-box"></i> <span>Ürünler</span></a></li>
+                        <li><a href="#" data-module="payments"><i class="fas fa-wallet"></i> <span>Ödemeler</span></a></li>
+                        <li><a href="#" data-module="sales"><i class="fas fa-shopping-cart"></i> <span>Satış</span></a></li>
+                        <li><a href="#" data-module="reports"><i class="fas fa-chart-bar"></i> <span>Raporlar</span></a></li>
+                        <li><a href="#" data-module="settings"><i class="fas fa-cog"></i> <span>Ayarlar</span></a></li>
+                        <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Çıkış</span></a></li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+        <main class="main-content">
+            <!-- Anasayfa Modülü -->
+            <div class="module-container active" id="dashboardModule">
+                <h2><i class="fas fa-home"></i> Anasayfa</h2>
+                 <div class="card">
+                    <div class="card-title"><i class="fas fa-bolt"></i> Hızlı İşlemler</div>
+                     <div class="dashboard-shortcuts">
+                        <div class="shortcut-card" id="quickIncomeBtn"><i class="fas fa-hand-holding-usd" style="color: var(--color-success)"></i><span>Hızlı Tahsilat</span></div>
+                        <div class="shortcut-card" id="quickExpenseBtn"><i class="fas fa-sign-out-alt" style="color: var(--color-danger)"></i><span>Hızlı Gider</span></div>
+                        <div class="shortcut-card" onclick="showModule('sales')"><i class="fas fa-shopping-cart"></i><span>Yeni Satış</span></div>
+                        <div class="shortcut-card" onclick="showModule('customers')"><i class="fas fa-users"></i><span>Müşteriler</span></div>
+                    </div>
+                </div>
+                <div class="card"><h3 class="card-title"><i class="fas fa-history"></i> Son İşlemler</h3><div class="table-responsive"><table><thead><tr><th>Tarih</th><th>İşlem Türü</th><th>Cari</th><th>Açıklama</th><th>Tutar</th></tr></thead><tbody id="recentTransactionsBody"><tr><td colspan="5" style="text-align:center;">İşlem bulunamadı.</td></tr></tbody></table></div></div>
+            </div>
+
+            <!-- Müşteriler Modülü -->
+            <div class="module-container" id="customersModule">
+                <div id="customerListContainer">
+                    <h2><i class="fas fa-users"></i> Müşteriler</h2>
+                    <div class="card">
+                        <div class="card-header"><button class="btn" id="addCustomerBtn"><i class="fas fa-plus"></i> Yeni Müşteri Ekle</button></div>
+                        <div class="table-responsive"><table><thead><tr><th>Ad Soyad/Firma</th><th>Telefon</th><th>Bakiye</th><th>İşlemler</th></tr></thead><tbody id="customersList"></tbody></table></div>
+                    </div>
+                </div>
+                <div id="customerDetailContainer" style="display: none;"></div>
+                <div class="card" id="customerForm" style="display: none;">
+                    <h3 class="card-title" id="customerFormTitle">Yeni Müşteri</h3>
+                    <form id="saveCustomerForm">
+                        <input type="hidden" id="customerId">
+                        <div class="form-row">
+                            <div class="form-group"><label for="customerName"><i class="fas fa-id-card"></i> Ad Soyad/Firma</label><input type="text" class="form-control" name="name" id="customerName" required></div>
+                            <div class="form-group form-group-half"><label for="customerPhone"><i class="fas fa-phone"></i> Telefon</label><input type="text" class="form-control" name="phone" id="customerPhone"></div>
+                            <div class="form-group form-group-half"><label for="customerEmail"><i class="fas fa-envelope"></i> E-posta</label><input type="email" class="form-control" name="email" id="customerEmail"></div>
+                            <div class="form-group"><label for="customerAddress"><i class="fas fa-map-marker-alt"></i> Adres</label><textarea class="form-control" name="address" id="customerAddress"></textarea></div>
+                            <div class="form-group form-group-half"><label for="customerTaxOffice"><i class="fas fa-building"></i> Vergi Dairesi</label><input type="text" class="form-control" name="taxOffice" id="customerTaxOffice"></div>
+                            <div class="form-group form-group-half"><label for="customerTaxNumber"><i class="fas fa-receipt"></i> Vergi No / TC</label><input type="text" class="form-control" name="taxNumber" id="customerTaxNumber"></div>
+                        </div>
+                        <button type="submit" class="btn"><i class="fas fa-save"></i> Kaydet</button>
+                        <button type="button" class="btn btn-danger" id="cancelCustomerBtn"><i class="fas fa-times"></i> İptal</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tedarikçiler Modülü -->
+            <div class="module-container" id="suppliersModule">
+                <div id="supplierListContainer">
+                    <h2><i class="fas fa-truck"></i> Tedarikçiler</h2>
+                    <div class="card">
+                        <div class="card-header"><button class="btn" id="addSupplierBtn"><i class="fas fa-plus"></i> Yeni Tedarikçi Ekle</button></div>
+                        <div class="table-responsive"><table><thead><tr><th>Firma Adı</th><th>Telefon</th><th>Bakiye</th><th>İşlemler</th></tr></thead><tbody id="suppliersList"></tbody></table></div>
+                    </div>
+                </div>
+                <div id="supplierDetailContainer" style="display: none;"></div>
+                <div class="card" id="supplierForm" style="display: none;">
+                    <h3 class="card-title" id="supplierFormTitle">Yeni Tedarikçi</h3>
+                    <form id="saveSupplierForm">
+                        <input type="hidden" id="supplierId">
+                        <div class="form-row">
+                            <div class="form-group"><label for="supplierName"><i class="fas fa-id-card"></i> Firma Adı</label><input type="text" class="form-control" name="name" id="supplierName" required></div>
+                            <div class="form-group form-group-half"><label for="supplierPhone"><i class="fas fa-phone"></i> Telefon</label><input type="text" class="form-control" name="phone" id="supplierPhone"></div>
+                            <div class="form-group form-group-half"><label for="supplierEmail"><i class="fas fa-envelope"></i> E-posta</label><input type="email" class="form-control" name="email" id="supplierEmail"></div>
+                        </div>
+                        <button type="submit" class="btn"><i class="fas fa-save"></i> Kaydet</button>
+                        <button type="button" class="btn btn-danger" id="cancelSupplierBtn"><i class="fas fa-times"></i> İptal</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Ürünler Modülü -->
+            <div class="module-container" id="productsModule">
+                <div id="productListContainer">
+                    <h2><i class="fas fa-box"></i> Ürünler ve Stok</h2>
+                    <div class="card">
+                        <div class="card-header">
+                            <button class="btn" id="addProductBtn"><i class="fas fa-plus"></i> Yeni Ürün Ekle</button>
+                            <button class="btn btn-success" id="purchaseStockBtn"><i class="fas fa-dolly-flatbed"></i> Stok Satın Al</button>
+                            <div style="margin-left: auto; display: flex; gap: 1rem; align-items: center;">
+                                <input type="search" id="productSearchInput" class="form-control" placeholder="Ürün ara..." style="max-width: 200px;">
+                                <select id="productSortSelect" class="form-control" style="max-width: 150px;">
+                                    <option value="name-asc">Ada Göre (A-Z)</option>
+                                    <option value="name-desc">Ada Göre (Z-A)</option>
+                                    <option value="stock-asc">Stok (Artan)</option>
+                                    <option value="stock-desc">Stok (Azalan)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <p style="padding: 0 1rem 0.5rem; color: var(--color-text-light);">Detaylı işlem geçmişi için bir ürünün üzerine tıklayın.</p>
+                            <table>
+                                <thead><tr><th>Ürün</th><th>Stok</th><th>Satış Fiyatı</th><th>İşlemler</th></tr></thead>
+                                <tbody id="productsList"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div id="productHistoryContainer" style="display: none;"></div>
+                <div class="card" id="productForm" style="display: none;">
+                    <h3 class="card-title" id="productFormTitle">Yeni Ürün</h3>
+                    <form id="saveProductForm">
+                        <input type="hidden" id="productId">
+                        <div class="form-row">
+                            <div class="form-group form-group-half"><label for="productName"><i class="fas fa-tag"></i> Ürün Adı</label><input type="text" class="form-control" id="productName" required></div>
+                            <div class="form-group form-group-half"><label for="productCode"><i class="fas fa-barcode"></i> Ürün Kodu</label><input type="text" class="form-control" id="productCode"></div>
+                            <div class="form-group"><label for="productSupplier"><i class="fas fa-truck"></i> Tedarikçi</label><select class="form-control" id="productSupplier"></select></div>
+                            <div class="form-group form-group-thirds"><label for="productBuyPrice"><i class="fas fa-money-bill-wave"></i> Alış Fiyatı (₺)</label><input type="number" step="0.01" class="form-control" id="productBuyPrice"></div>
+                            <div class="form-group form-group-thirds"><label for="productSellPrice"><i class="fas fa-tags"></i> Satış Fiyatı (₺)</label><input type="number" step="0.01" class="form-control" id="productSellPrice" required></div>
+                            <div class="form-group form-group-thirds"><label for="productRecommendedPrice"><i class="fas fa-store"></i> Önerilen Satış Fiyatı (₺)</label><input type="number" step="0.01" class="form-control" id="productRecommendedPrice"></div>
+                            <div class="form-group form-group-half"><label for="productStock"><i class="fas fa-cubes"></i> Stok Miktarı</label><input type="number" class="form-control" id="productStock" required></div>
+                            <div class="form-group form-group-half"><label for="productExpiryDate"><i class="fas fa-calendar-times"></i> SKT</label><input type="date" class="form-control" id="productExpiryDate"></div>
+                            <div class="form-group"><label for="productImageUrl"><i class="fas fa-image"></i> Resim URL</label><input type="text" class="form-control" id="productImageUrl"></div>
+                        </div>
+                        <button type="submit" class="btn"><i class="fas fa-save"></i> Kaydet</button><button type="button" class="btn btn-danger" id="cancelProductBtn"><i class="fas fa-times"></i> İptal</button>
+                    </form>
+                </div>
+                <div id="stockPurchaseContainer" style="display: none;">
+                    <h2><i class="fas fa-dolly-flatbed"></i> Stok Satın Alma</h2>
+                    <div class="card">
+                        <form id="saveStockPurchaseForm">
+                            <div class="form-row">
+                                <div class="form-group form-group-half"><label for="purchaseDate"><i class="fas fa-calendar-alt"></i> Tarih</label><input type="date" class="form-control" id="purchaseDate" required></div>
+                                <div class="form-group form-group-half"><label for="purchaseNumber"><i class="fas fa-hashtag"></i> Fatura No</label><input type="text" class="form-control" id="purchaseNumber" required></div>
+                                <div class="form-group"><label for="purchaseSupplier"><i class="fas fa-truck"></i> Tedarikçi</label><select class="form-control" id="purchaseSupplier" required></select></div>
+                            </div>
+                            <div class="table-responsive">
+                                <table id="purchaseItemsTable">
+                                    <thead><tr><th>Ürün</th><th>Miktar</th><th>Birim Fiyat</th><th>Toplam</th><th><button type="button" class="btn btn-sm" id="addPurchaseItemBtn"><i class="fas fa-plus"></i></button></th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <div style="text-align: right; margin-top: 1rem; font-size: 1.2rem; font-weight: bold;">Genel Toplam: <span id="purchaseTotal">0.00</span> ₺</div>
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Alımı Kaydet</button>
+                            <button type="button" class="btn btn-danger" id="cancelPurchaseBtn"><i class="fas fa-times"></i> İptal</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ödemeler Hub Modülü -->
+            <div class="module-container" id="paymentsModule">
+                <h2><i class="fas fa-wallet"></i> Ödemeler Yönetimi</h2>
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-bolt"></i> Hızlı İşlemler</div>
+                     <div class="dashboard-shortcuts">
+                        <div class="shortcut-card" id="quickIncomeBtn2"><i class="fas fa-hand-holding-usd" style="color: var(--color-success)"></i><span>Hızlı Tahsilat</span></div>
+                        <div class="shortcut-card" id="quickExpenseBtn2"><i class="fas fa-sign-out-alt" style="color: var(--color-danger)"></i><span>Hızlı Gider</span></div>
+                    </div>
+                </div>
+                <div class="dashboard-shortcuts">
+                    <div class="shortcut-card" onclick="showModule('finance')"><i class="fas fa-money-bill-wave"></i><span>Nakit Akışı</span></div>
+                    <div class="shortcut-card" onclick="showModule('promissoryNotes')"><i class="fas fa-file-invoice-dollar"></i><span>Senet Takibi</span></div>
+                    <div class="shortcut-card" onclick="showModule('creditCard')"><i class="far fa-credit-card"></i><span>Kredi Kartları</span></div>
+                    <div class="shortcut-card" onclick="showModule('bankLoan')"><i class="fas fa-university"></i><span>Banka Kredileri</span></div>
+                </div>
+            </div>
+            
+            <!-- Senetler Modülü -->
+            <div class="module-container" id="promissoryNotesModule">
+                <h2><i class="fas fa-file-invoice-dollar"></i> Senet Takibi</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <button class="btn" id="addPromissoryNoteBtn"><i class="fas fa-plus"></i> Yeni Senet Ekle</button>
+                        <div style="margin-left: auto; display: flex; align-items: center; gap: 1rem;">
+                            <button class="btn btn-info" id="sumSelectedNotesBtn"><i class="fas fa-calculator"></i> Seçilenleri Topla</button>
+                            <span id="selectedNotesTotal" style="font-weight: bold;"></span>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th><input type="checkbox" id="selectAllNotes"></th><th>Tür</th><th>Cari</th><th>Vade Tarihi</th><th>Tutar</th><th>Açıklama</th><th>Durum</th><th>İşlemler</th></tr></thead>
+                            <tbody id="promissoryNotesList"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card" id="promissoryNoteForm" style="display: none;">
+                    <h3 class="card-title" id="promissoryNoteFormTitle">Yeni Senet</h3>
+                    <form id="savePromissoryNoteForm">
+                        <input type="hidden" id="promissoryNoteId">
+                        <div class="form-row">
+                            <div class="form-group form-group-half"><label for="promissoryNoteType">Senet Türü</label><select id="promissoryNoteType" class="form-control" required><option value="customer">Müşteri Senedi (Alınan)</option><option value="supplier">Firma Senedi (Verilen)</option></select></div>
+                            <div class="form-group form-group-half"><label for="promissoryNoteContact">İlgili Cari</label><select id="promissoryNoteContact" class="form-control" required></select></div>
+                            <div class="form-group form-group-half"><label for="promissoryNoteSerial">Seri No</label><input type="text" id="promissoryNoteSerial" class="form-control"></div>
+                            <div class="form-group form-group-half"><label for="promissoryNoteAmount">Tutar (₺)</label><input type="number" step="0.01" id="promissoryNoteAmount" class="form-control" required></div>
+                            <div class="form-group form-group-half"><label for="promissoryNoteDueDate">Vade Tarihi</label><input type="date" id="promissoryNoteDueDate" class="form-control" required></div>
+                            <div class="form-group form-group-half"><label for="promissoryNoteStatus">Durum</label><select id="promissoryNoteStatus" class="form-control" required><option value="portfolio">Portföyde</option><option value="paid">Ödendi</option><option value="protested">Protesto</option></select></div>
+                            <div class="form-group"><label for="promissoryNoteDescription">Açıklama</label><textarea id="promissoryNoteDescription" class="form-control"></textarea></div>
+                        </div>
+                        <button type="submit" class="btn"><i class="fas fa-save"></i> Kaydet</button>
+                        <button type="button" class="btn btn-danger" id="cancelPromissoryNoteBtn"><i class="fas fa-times"></i> İptal</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Finans Modülü (Nakit Akışı) -->
+            <div class="module-container" id="financeModule">
+                 <h2><i class="fas fa-money-bill-wave"></i> Nakit Akışı</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <button class="btn btn-success" id="addIncomeBtn"><i class="fas fa-plus"></i> Nakit Girişi</button>
+                        <button class="btn btn-danger" id="addExpenseBtn"><i class="fas fa-minus"></i> Nakit Çıkışı</button>
+                    </div>
+                     <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Tarih</th><th>Tür</th><th>İlgili Cari</th><th>Açıklama</th><th>Tutar</th><th>İşlemler</th></tr></thead>
+                            <tbody id="financeTransactionsList"></tbody>
+                        </table>
+                    </div>
+                </div>
+                 <div class="card" id="financeForm" style="display: none;">
+                    <h3 class="card-title" id="financeFormTitle">Yeni Finansal İşlem</h3>
+                    <form id="saveFinanceForm">
+                        <input type="hidden" id="financeId">
+                        <input type="hidden" id="financeType">
+                        <div class="form-row">
+                            <div class="form-group form-group-half"><label for="financeDate">Tarih</label><input type="date" id="financeDate" class="form-control" required></div>
+                            <div class="form-group form-group-half"><label for="financeAmount">Tutar (₺)</label><input type="number" step="0.01" id="financeAmount" class="form-control" required></div>
+                            <div class="form-group"><label for="financeContactType">İlgili Hesap Türü</label>
+                                <select id="financeContactType" class="form-control">
+                                    <option value="none">İlişkisiz</option>
+                                    <option value="customer">Müşteri</option>
+                                    <option value="supplier">Tedarikçi</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="financeContactSelectGroup" style="display: none;"><label for="financeContact">İlgili Cari</label><select id="financeContact" class="form-control"></select></div>
+                            <div class="form-group"><label for="financeDescription">Açıklama</label><textarea id="financeDescription" class="form-control" required></textarea></div>
+                        </div>
+                        <button type="submit" class="btn"><i class="fas fa-save"></i> Kaydet</button>
+                        <button type="button" class="btn btn-danger" id="cancelFinanceBtn"><i class="fas fa-times"></i> İptal</button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Kredi Kartı Modülü -->
+            <div class="module-container" id="creditCardModule">
+                <div id="creditCardListContainer">
+                    <h2><i class="far fa-credit-card"></i> Kredi Kartı Takibi</h2>
+                    <div class="card">
+                        <div class="card-header"><button class="btn" id="addCreditCardBtn"><i class="fas fa-plus"></i> Yeni Kredi Kartı Ekle</button></div>
+                        <div class="table-responsive"><table><thead><tr><th>Banka</th><th>Kart Adı</th><th>Limit</th><th>Kesim Tarihi</th><th>Son Ödeme</th><th>İşlemler</th></tr></thead><tbody id="creditCardsList"></tbody></table></div>
+                    </div>
+                </div>
+                <div class="card" id="creditCardForm" style="display: none;">
+                    <h3 class="card-title" id="creditCardFormTitle">Yeni Kredi Kartı</h3>
+                    <form id="saveCreditCardForm">
+                        <input type="hidden" id="creditCardId">
+                        <div class="form-row">
+                            <div class="form-group form-group-half"><label for="creditCardBank"><i class="fas fa-university"></i> Banka Adı</label><input type="text" class="form-control" id="creditCardBank" required></div>
+                            <div class="form-group form-group-half"><label for="creditCardName"><i class="far fa-credit-card"></i> Kart Adı</label><input type="text" class="form-control" id="creditCardName" placeholder="Örn: Axess Platinum" required></div>
+                            <div class="form-group form-group-thirds"><label for="creditCardLimit"><i class="fas fa-coins"></i> Limit</label><input type="number" step="0.01" class="form-control" id="creditCardLimit" required></div>
+                            <div class="form-group form-group-thirds"><label for="creditCardStatementDay"><i class="fas fa-calendar-day"></i> Hesap Kesim Günü</label><input type="number" class="form-control" id="creditCardStatementDay" min="1" max="31" required></div>
+                            <div class="form-group form-group-thirds"><label for="creditCardDueDay"><i class="fas fa-calendar-check"></i> Son Ödeme Günü</label><input type="number" class="form-control" id="creditCardDueDay" min="1" max="31" required></div>
+                        </div>
+                        <button type="submit" class="btn"><i class="fas fa-save"></i> Kaydet</button>
+                        <button type="button" class="btn btn-danger" id="cancelCreditCardBtn"><i class="fas fa-times"></i> İptal</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Banka Kredisi Modülü -->
+            <div class="module-container" id="bankLoanModule">
+                <div id="bankLoanListContainer">
+                    <h2><i class="fas fa-university"></i> Banka Kredisi Takibi</h2>
+                    <div class="card">
+                        <div class="card-header"><button class="btn" id="addBankLoanBtn"><i class="fas fa-plus"></i> Yeni Kredi Ekle</button></div>
+                        <div class="table-responsive"><table><thead><tr><th>Banka</th><th>Kredi Adı</th><th>Tutar</th><th>Vade</th><th>Aylık Taksit</th><th>İşlemler</th></tr></thead><tbody id="bankLoansList"></tbody></table></div>
+                    </div>
+                </div>
+                <div id="bankLoanDetailContainer" style="display: none;"></div>
+                <div class="card" id="bankLoanForm" style="display: none;">
+                    <h3 class="card-title" id="bankLoanFormTitle">Yeni Banka Kredisi</h3>
+                    <form id="saveBankLoanForm">
+                        <input type="hidden" id="bankLoanId">
+                        <div class="form-row">
+                            <div class="form-group form-group-half"><label for="bankLoanBank"><i class="fas fa-university"></i> Banka Adı</label><input type="text" class="form-control" id="bankLoanBank" required></div>
+                            <div class="form-group form-group-half"><label for="bankLoanName"><i class="fas fa-file-signature"></i> Kredi Adı/Türü</label><input type="text" class="form-control" id="bankLoanName" placeholder="Örn: Taşıt Kredisi" required></div>
+                            <div class="form-group form-group-thirds"><label for="bankLoanAmount"><i class="fas fa-coins"></i> Kredi Tutarı (Ana Para)</label><input type="number" step="0.01" class="form-control" id="bankLoanAmount" required></div>
+                            <div class="form-group form-group-thirds"><label for="bankLoanRate"><i class="fas fa-percentage"></i> Aylık Faiz Oranı (%)</label><input type="number" step="0.01" class="form-control" id="bankLoanRate" required></div>
+                            <div class="form-group form-group-thirds"><label for="bankLoanInstallments"><i class="fas fa-calendar-alt"></i> Vade (Ay)</label><input type="number" class="form-control" id="bankLoanInstallments" required></div>
+                            <div class="form-group"><label for="bankLoanStartDate"><i class="fas fa-calendar-check"></i> İlk Ödeme Tarihi</label><input type="date" class="form-control" id="bankLoanStartDate" required></div>
+                        </div>
+                        <button type="submit" class="btn"><i class="fas fa-save"></i> Kaydet</button>
+                        <button type="button" class="btn btn-danger" id="cancelBankLoanBtn"><i class="fas fa-times"></i> İptal</button>
+                    </form>
+                </div>
+            </div>
+
+
+            <!-- Satış Modülü -->
+            <div class="module-container" id="salesModule">
+                 <h2><i class="fas fa-shopping-cart"></i> Yeni Satış Faturası</h2>
+                 <div class="card">
+                     <form id="saveSaleForm">
+                        <div class="form-row">
+                             <div class="form-group form-group-half"><label for="saleDate">Tarih</label><input type="date" class="form-control" id="saleDate" required></div>
+                             <div class="form-group form-group-half"><label for="saleInvoiceNumber">Fatura No</label><input type="text" class="form-control" id="saleInvoiceNumber" required readonly></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex-grow: 3;"><label for="saleCustomer">Müşteri</label><select class="form-control" id="saleCustomer" required></select></div>
+                            <div class="form-group" style="flex-grow: 1; display: flex; align-items: flex-end;">
+                                <button type="button" class="btn btn-secondary" id="addInvoiceNotesBtn" style="width: 100%;"><i class="fas fa-sticky-note"></i> Fatura Notu</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="saleNotes">
+                        
+                        <div class="sale-item-entry-box">
+                             <h4 class="card-title" style="font-size: 1rem; margin-bottom: 1rem;">Ürün Ekle</h4>
+                             <div id="saleProductEntry">
+                                <div class="form-group">
+                                    <label>Ürün</label>
+                                    <select class="form-control" id="saleProductSelect"></select>
+                                </div>
+                                <div class="form-row" style="align-items: flex-end;">
+                                    <div class="form-group" style="flex:1;"><label>Adet</label><input type="number" class="form-control" id="saleProductQuantity" value="1" min="1"></div>
+                                    <div class="form-group" style="flex:1;"><label>Birim Fiyat</label><input type="number" step="0.01" class="form-control" id="saleProductPrice" value="0"></div>
+                                    <div class="form-group" style="flex:2; display:flex; gap: 0.5rem;">
+                                        <button type="button" class="btn btn-info" id="addSaleItemToListBtn" style="flex:1;"><i class="fas fa-plus"></i> Ekle</button>
+                                        <button type="button" class="btn btn-warning" id="addNonStockItemToListBtn" style="flex:1;"><i class="fas fa-truck-loading"></i> Stok Dışı Ekle</button>
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
+
+                        <h4 class="card-title" style="font-size: 1.1rem; margin-top: 2rem;">Fatura İçeriği</h4>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Ürün</th>
+                                        <th>Adet</th>
+                                        <th>Birim Fiyat</th>
+                                        <th>Toplam</th>
+                                        <th>Kaldır</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="saleItemsList">
+                                    <!-- Eklenen ürünler buraya listelenecek -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="text-align: right; margin-top: 1.5rem; font-size: 1.2rem; font-weight: bold;">Genel Toplam: <span id="saleTotal">0.00</span> ₺</div>
+                        <button type="submit" class="btn btn-success" style="margin-top: 1rem;"><i class="fas fa-save"></i> Satışı Kaydet ve Faturayı Görüntüle</button>
+                     </form>
+                 </div>
+            </div>
+
+            <!-- Raporlar Modülü -->
+            <div class="module-container" id="reportsModule">
+                <h2><i class="fas fa-chart-bar"></i> Raporlar</h2>
+                <div class="card">
+                    <div class="report-filters">
+                        <select id="reportDateFilter" class="form-control" style="flex: 1;">
+                            <option value="thisMonth">Bu Ay</option>
+                            <option value="today">Bugün</option>
+                            <option value="thisWeek">Bu Hafta</option>
+                            <option value="lastMonth">Geçen Ay</option>
+                            <option value="last3Months">Son 3 Ay</option>
+                            <option value="last6Months">Son 6 Ay</option>
+                            <option value="last1Year">Son 1 Yıl</option>
+                            <option value="lastYear">Geçen Yıl</option>
+                            <option value="custom">Özel Tarih Aralığı</option>
+                        </select>
+                        <input type="date" id="reportStartDate" class="form-control" style="flex: 1; display:none;">
+                        <input type="date" id="reportEndDate" class="form-control" style="flex: 1; display:none;">
+                    </div>
+                </div>
+
+                <div class="stats-container" id="dashboardStats">
+                    <div class="stats-card sales"><h3>Toplam Satış</h3><div class="value" id="statsTotalSales">0 ₺</div></div>
+                    <div class="stats-card profit"><h3>Toplam Kâr</h3><div class="value" id="statsTotalProfit">0 ₺</div><div class="sub-value" id="statsProfitMargin">Kâr Oranı: %0</div></div>
+                    <div class="stats-card customers"><h3>Müşteri Sayısı</h3><div class="value" id="statsCustomerCount">0</div></div>
+                    <div class="stats-card debt"><h3>Toplam Alacak</h3><div class="value" id="statsTotalReceivables">0 ₺</div></div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-chart-line"></i> Satış Grafiği</h3>
+                    <canvas id="monthlySalesReportChart"></canvas>
+                </div>
+                 <div class="card">
+                    <h3 class="card-title"><i class="fas fa-trophy"></i> En Çok Kazandıranlar</h3>
+                    <div class="form-row">
+                        <div class="form-group form-group-half">
+                            <h4>Müşteriler</h4>
+                            <div class="table-responsive">
+                                <table><thead><tr><th>Müşteri</th><th>Toplam Kâr</th></tr></thead><tbody id="topCustomersReport"></tbody></table>
+                            </div>
+                        </div>
+                         <div class="form-group form-group-half">
+                            <h4>Ürünler</h4>
+                            <div class="table-responsive">
+                                <table><thead><tr><th>Ürün</th><th>Toplam Kâr</th></tr></thead><tbody id="topProductsReport"></tbody></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ayarlar Modülü -->
+            <div class="module-container" id="settingsModule">
+                 <h2><i class="fas fa-cog"></i> Ayarlar</h2>
+                 <div class="card">
+                     <h3 class="card-title">Genel Ayarlar</h3>
+                     <form id="settingsForm">
+                         <div class="form-group">
+                             <label for="settingAppName">Uygulama Adı</label>
+                             <input type="text" class="form-control" id="settingAppName">
+                         </div>
+                         <div class="form-group">
+                             <label for="settingAppLogo">Logo URL</label>
+                             <input type="text" class="form-control" id="settingAppLogo">
+                         </div>
+                         <button type="submit" class="btn"><i class="fas fa-save"></i> Ayarları Kaydet</button>
+                     </form>
+                 </div>
+                 <div class="card">
+                    <h3 class="card-title">Renk Paleti</h3>
+                    <p style="margin-bottom: 1rem; color: var(--color-text-light);">Uygulamanın görünümünü kişiselleştirin.</p>
+                    <div id="colorSettingsContainer" class="form-row"></div>
+                    <button class="btn" id="saveColorsBtn"><i class="fas fa-save"></i> Renkleri Kaydet</button>
+                    <button class="btn btn-secondary" id="resetColorsBtn"><i class="fas fa-undo"></i> Varsayılana Dön</button>
+                 </div>
+                 <div class="card">
+                    <h3 class="card-title">Menü İkon Renkleri</h3>
+                     <div id="iconColorSettingsContainer" class="form-row"></div>
+                     <button class="btn" id="saveIconColorsBtn"><i class="fas fa-save"></i> İkon Renklerini Kaydet</button>
+                 </div>
+                 <div class="card">
+                    <h3 class="card-title">Veri Yönetimi</h3>
+                     <p style="margin-bottom: 1rem; color: var(--color-text-light);">Uygulama verilerinizi yedekleyebilir veya daha önce aldığınız bir yedeği geri yükleyebilirsiniz.</p>
+                     <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--color-border);">
+                        <button class="btn btn-secondary" id="backupDataBtn"><i class="fas fa-download"></i> Verileri Yedekle (JSON)</button>
+                        <button class="btn btn-info" id="restoreDataBtn"><i class="fas fa-upload"></i> Verileri Geri Yükle (JSON)</button>
+                        <input type="file" id="restoreFileInput" style="display: none;" accept=".json">
+                        <button class="btn btn-danger" id="resetDataBtn"><i class="fas fa-trash-alt"></i> Tüm Verileri Sıfırla</button>
+                     </div>
+                     <h4 style="margin-bottom: 1rem;">Excel Veri Yönetimi</h4>
+                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button class="btn btn-success" id="exportCustomersExcel"><i class="fas fa-file-excel"></i> Müşterileri Aktar</button>
+                        <button class="btn btn-success" id="exportSuppliersExcel"><i class="fas fa-file-excel"></i> Tedarikçileri Aktar</button>
+                        <button class="btn btn-success" id="exportProductsExcel"><i class="fas fa-file-excel"></i> Ürünleri Aktar</button>
+                        <button class="btn btn-warning" id="importDataExcelBtn"><i class="fas fa-file-import"></i> Excel'den Veri Al</button>
+                        <input type="file" id="importExcelInput" style="display:none" accept=".xlsx, .xls">
+                     </div>
+                 </div>
+                 <div class="card">
+                    <h3 class="card-title">Yazıcı ve Şablonlar</h3>
+                    <p style="margin-bottom: 1rem; color: var(--color-text-light);">Ekstre ve fatura çıktılarının HTML şablonunu buradan düzenleyebilirsiniz. Değişkenleri <code>{{degisken_adi}}</code> formatında kullanın.</p>
+                    <div class="form-group">
+                        <label for="templateSelector">Düzenlenecek Şablon:</label>
+                        <select id="templateSelector" class="form-control">
+                            <option value="ekstre">Hesap Ekstresi</option>
+                            <option value="fatura">Satış Faturası</option>
+                        </select>
+                    </div>
+                    <div class="template-editor-toolbar">
+                        <select id="templateInsertVariable">
+                            <option value="">Değişken Ekle...</option>
+                        </select>
+                    </div>
+                    <textarea id="templateEditor" class="form-control"></textarea>
+                    <button class="btn" id="saveTemplateBtn" style="margin-top: 1rem;"><i class="fas fa-save"></i> Şablonu Kaydet</button>
+                 </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- INDEXEDDB VERİTABANI YÖNETİMİ ---
+    const DB = {
+        _db: null,
+        _dbName: 'muhasisDB',
+        _dbVersion: 1,
+        _stores: ['customers', 'suppliers', 'products', 'promissoryNotes', 'transactions', 'sales', 'purchases', 'creditCards', 'bankLoans', 'loanPayments', 'settings'],
+
+        async init() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(this._dbName, this._dbVersion);
+                request.onerror = (event) => reject("IndexedDB error: " + event.target.errorCode);
+                request.onsuccess = (event) => {
+                    this._db = event.target.result;
+                    console.log("Database opened successfully.");
+                    resolve(this._db);
+                };
+                request.onupgradeneeded = (event) => {
+                    console.log("Database upgrade needed.");
+                    this._db = event.target.result;
+                    this._stores.forEach(storeName => {
+                        if (!this._db.objectStoreNames.contains(storeName)) {
+                            this._db.createObjectStore(storeName, { keyPath: 'id' });
+                        }
+                    });
+                };
+            });
+        },
+        
+        async _getStore(storeName, mode = 'readonly') {
+            if (!this._db) await this.init();
+            return this._db.transaction(storeName, mode).objectStore(storeName);
+        },
+
+        async add(storeName, item) {
+            const store = await this._getStore(storeName, 'readwrite');
+            return new Promise((resolve, reject) => {
+                if (!item.id) item.id = '_' + Math.random().toString(36).substr(2, 9);
+                const request = store.add(item);
+                request.onsuccess = () => resolve(item);
+                request.onerror = (event) => reject(event.target.error);
+            });
+        },
+        
+        async update(storeName, item) {
+             const store = await this._getStore(storeName, 'readwrite');
+             return new Promise((resolve, reject) => {
+                const request = store.put(item);
+                request.onsuccess = () => resolve(item);
+                request.onerror = (event) => reject(event.target.error);
+            });
+        },
+
+        async get(storeName, id) {
+            const store = await this._getStore(storeName);
+            return new Promise((resolve, reject) => {
+                const request = store.get(id);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = (event) => reject(event.target.error);
+            });
+        },
+        
+        async getAll(storeName) {
+            const store = await this._getStore(storeName);
+            return new Promise((resolve, reject) => {
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = (event) => reject(event.target.error);
+            });
+        },
+
+        async delete(storeName, id) {
+            const store = await this._getStore(storeName, 'readwrite');
+            return new Promise((resolve, reject) => {
+                const request = store.delete(id);
+                request.onsuccess = () => resolve();
+                request.onerror = (event) => reject(event.target.error);
+            });
+        },
+        
+        async getSettings() {
+             let settings = await this.get('settings', 'main');
+             if (!settings) {
+                settings = {
+                    id: 'main',
+                    appName: 'EFE GIDA',
+                    appLogo: 'https://res.cloudinary.com/glide/image/fetch/f_auto,h_150,c_limit/https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fglide-prod.appspot.com%2Fo%2Ficon-images%252Fanonymous-01bc4230-ccc1-4021-aa3d-1e76bda4930d.png%3Falt%3Dmedia%26token%3D5b04d4b6-eb49-4896-b994-c7c52fcabd46',
+                    ekstreTemplate: defaultEkstreTemplate,
+                    faturaTemplate: defaultFaturaTemplate,
+                    colors: {},
+                    navIconColors: {}
+                };
+                await this.update('settings', settings);
+             }
+             if(!settings.ekstreTemplate) settings.ekstreTemplate = defaultEkstreTemplate;
+             if(!settings.faturaTemplate) settings.faturaTemplate = defaultFaturaTemplate; 
+             if(!settings.navIconColors) settings.navIconColors = {};
+             return settings;
+        },
+        
+        async setSettings(settings) {
+            settings.id = 'main';
+            return this.update('settings', settings);
+        },
+
+        async addTransaction(type, contactType, contactId, contactName, description, amount, date) {
+            const newTransaction = {
+                date: date || new Date().toISOString().split('T')[0],
+                type,
+                contactType,
+                contactId,
+                contactName,
+                description,
+                amount: parseFloat(amount)
+            };
+            return this.add('transactions', newTransaction);
+        },
+    };
+
+    // --- UI ELEMENTLERİ ---
+    const loginPage = document.getElementById('loginPage');
+    const dashboardPage = document.getElementById('dashboardPage');
+    const loginForm = document.getElementById('loginForm');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const mainNav = document.getElementById('mainNav');
+    const modules = document.querySelectorAll('.module-container');
+    const toastContainer = document.getElementById('toastContainer');
+    
+    // Modals
+    const confirmationModal = document.getElementById('confirmationModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+    const quickTransactionModal = document.getElementById('quickTransactionModal');
+    const invoiceModal = document.getElementById('invoiceModal');
+    const invoiceNotesModal = document.getElementById('invoiceNotesModal');
+
+
+    let currentConfirmationCallback = null;
+    
+    // --- TEMEL UI FONKSİYONLARI ---
+    
+    const showToast = (message, type = 'info') => {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        let iconClass = 'fas fa-info-circle';
+        if (type === 'success') iconClass = 'fas fa-check-circle';
+        if (type === 'error') iconClass = 'fas fa-times-circle';
+        
+        toast.innerHTML = `<i class="${iconClass}"></i> ${message}`;
+        toastContainer.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('hide');
+            toast.addEventListener('animationend', () => toast.remove());
+        }, 3000);
+    };
+
+    const showConfirmationModal = (title, message, onConfirm) => {
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        currentConfirmationCallback = onConfirm;
+        confirmationModal.classList.add('active');
+    };
+
+    modalConfirmBtn.addEventListener('click', () => {
+        if (currentConfirmationCallback) {
+            currentConfirmationCallback();
+        }
+        confirmationModal.classList.remove('active');
+    });
+
+    modalCancelBtn.addEventListener('click', () => {
+        confirmationModal.classList.remove('active');
+    });
+
+    const formatCurrency = (amount) => {
+        if (typeof amount !== 'number') {
+            amount = 0;
+        }
+        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        return new Date(dateString).toLocaleDateString('tr-TR');
+    };
+
+    const applySettings = async () => {
+        const settings = await DB.getSettings();
+        document.querySelectorAll('.app-name').forEach(el => el.textContent = settings.appName || 'Muhasebe');
+        document.querySelectorAll('.app-name-title').forEach(el => el.textContent = `${settings.appName} - Gelişmiş Ön Muhasebe Sistemi`);
+        document.getElementById('appLogo').src = settings.appLogo || '';
+
+        const defaultColors = {
+            '--color-primary': '#2563eb', '--color-background': '#f1f5f9',
+            '--color-secondary': '#ffffff', '--color-text': '#1e293b',
+            '--color-danger': '#ef4444', '--color-success': '#10b981'
+        };
+        const colorsToApply = settings.colors || {};
+        for (const key in defaultColors) {
+            document.documentElement.style.setProperty(key, colorsToApply[key] || defaultColors[key]);
+        }
+
+        const navIconColors = settings.navIconColors || {};
+        mainNav.querySelectorAll('a[data-module]').forEach(link => {
+            const icon = link.querySelector('i');
+            const module = link.dataset.module;
+            if (icon && navIconColors[module]) {
+                icon.style.color = navIconColors[module];
+            } else if (icon) {
+                icon.style.color = ''; // Reset to default
+            }
+        });
+         const logoutIcon = document.querySelector('#logoutBtn i');
+         if(logoutIcon && navIconColors['logout']) {
+             logoutIcon.style.color = navIconColors['logout'];
+         } else if(logoutIcon) {
+            logoutIcon.style.color = '';
+         }
+    };
+
+    // --- KİMLİK DOĞRULAMA ---
+    const checkLogin = async () => {
+        if (sessionStorage.getItem('loggedIn')) {
+            loginPage.style.display = 'none';
+            dashboardPage.style.display = 'block';
+            await applySettings();
+            await renderDashboard();
+        } else {
+            loginPage.style.display = 'flex';
+            dashboardPage.style.display = 'none';
+        }
+    };
+    
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = e.target.username.value;
+        const password = e.target.password.value;
+        if (username === 'admin' && password === '1234') {
+            sessionStorage.setItem('loggedIn', 'true');
+            checkLogin();
+            showToast('Giriş başarılı!', 'success');
+        } else {
+            showToast('Kullanıcı adı veya şifre yanlış!', 'error');
+        }
+    });
+
+    logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        showConfirmationModal('Çıkış', 'Çıkış yapmak istediğinizden emin misiniz?', () => {
+            sessionStorage.removeItem('loggedIn');
+            checkLogin();
+            showToast('Başarıyla çıkış yapıldı.');
+        });
+    });
+
+    // --- MODÜL NAVİGASYONU ---
+    window.showModule = async (moduleName) => {
+        modules.forEach(module => module.classList.remove('active'));
+        document.getElementById(`${moduleName}Module`).classList.add('active');
+
+        mainNav.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+        const activeLink = mainNav.querySelector(`a[data-module="${moduleName}"]`) || mainNav.querySelector(`a[data-module="payments"]`);
+        activeLink.classList.add('active');
+        
+        hideAllFormsAndDetails();
+        
+        switch (moduleName) {
+            case 'dashboard': await renderDashboard(); break;
+            case 'customers': await renderCustomers(); break;
+            case 'suppliers': await renderSuppliers(); break;
+            case 'products': await renderProducts(); break;
+            case 'payments': break;
+            case 'promissoryNotes': await renderPromissoryNotes(); break;
+            case 'finance': await renderFinanceTransactions(); break;
+            case 'creditCard': await renderCreditCards(); break;
+            case 'bankLoan': await renderBankLoans(); break;
+            case 'sales': await renderNewSaleForm(); break;
+            case 'reports': await renderReports(); break;
+            case 'settings': await renderSettings(); break;
+        }
+    };
+
+    mainNav.addEventListener('click', (e) => {
+        const link = e.target.closest('a[data-module]');
+        if (link) {
+            e.preventDefault();
+            showModule(link.dataset.module);
+        }
+    });
+
+    function hideAllFormsAndDetails() {
+        document.querySelectorAll('#customersModule #customerForm, #customersModule #customerDetailContainer').forEach(el => el.style.display = 'none');
+        document.getElementById('customerListContainer').style.display = 'block';
+        document.querySelectorAll('#suppliersModule #supplierForm, #suppliersModule #supplierDetailContainer').forEach(el => el.style.display = 'none');
+        document.getElementById('supplierListContainer').style.display = 'block';
+        document.querySelectorAll('#productsModule #productForm, #productsModule #stockPurchaseContainer, #productsModule #productHistoryContainer').forEach(el => el.style.display = 'none');
+        document.getElementById('productListContainer').style.display = 'block';
+        document.getElementById('promissoryNoteForm').style.display = 'none';
+        document.getElementById('financeForm').style.display = 'none';
+        document.getElementById('creditCardForm').style.display = 'none';
+        document.getElementById('creditCardListContainer').style.display = 'block';
+        document.querySelectorAll('#bankLoanModule #bankLoanForm, #bankLoanModule #bankLoanDetailContainer').forEach(el => el.style.display = 'none');
+        document.getElementById('bankLoanListContainer').style.display = 'block';
+    }
+
+    // --- HESAPLAMA FONKSİYONLARI ---
+    const calculateBalance = async (contactType, contactId) => {
+        const allSales = await DB.getAll('sales');
+        const allTransactions = await DB.getAll('transactions');
+
+        let total = 0;
+        if(contactType === 'customer') {
+            const customerSalesTotal = allSales.filter(s => s.customerId === contactId).reduce((sum, s) => sum + s.total, 0);
+            const customerPaymentsTotal = allTransactions.filter(t => t.contactId === contactId && t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+            total = customerSalesTotal - customerPaymentsTotal;
+        } else if(contactType === 'supplier') {
+            const allPurchases = await DB.getAll('purchases');
+            const supplierPurchasesTotal = allPurchases.filter(p => p.supplierId === contactId).reduce((sum, p) => sum + p.total, 0);
+            const supplierPaymentsTotal = allTransactions.filter(t => t.contactId === contactId && t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+             total = supplierPurchasesTotal - supplierPaymentsTotal;
+        }
+        return total;
+    };
+    
+    // --- Anasayfa MODÜLÜ ---
+    const renderDashboard = async () => {
+        const transactions = (await DB.getAll('transactions')).sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+        const recentTransactionsBody = document.getElementById('recentTransactionsBody');
+        recentTransactionsBody.innerHTML = '';
+        if(transactions.length === 0) {
+             recentTransactionsBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">İşlem bulunamadı.</td></tr>';
+             return;
+        }
+        transactions.forEach(t => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${formatDate(t.date)}</td>
+                <td>${t.type === 'income' ? 'Nakit Girişi' : (t.contactType === 'none' ? 'Gider' : 'Nakit Çıkışı')}</td>
+                <td>${t.contactName || '-'}</td>
+                <td>${t.description}</td>
+                <td style="color: ${t.type === 'income' ? 'var(--color-success)' : 'var(--color-danger)'}">${formatCurrency(t.amount)}</td>
+            `;
+            recentTransactionsBody.appendChild(row);
+        });
+    };
+
+    // --- MÜŞTERİLER MODÜLÜ ---
+    const customerListEl = document.getElementById('customersList');
+    const customerForm = document.getElementById('customerForm');
+    const customerListContainer = document.getElementById('customerListContainer');
+    const saveCustomerForm = document.getElementById('saveCustomerForm');
+
+    const renderCustomers = async () => {
+        const customers = await DB.getAll('customers');
+        customerListEl.innerHTML = '';
+        if(customers.length === 0) {
+            customerListEl.innerHTML = '<tr><td colspan="4" style="text-align:center;">Müşteri bulunamadı.</td></tr>';
+            return;
+        }
+        for(const c of customers) {
+            const balance = await calculateBalance('customer', c.id);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${c.name}</td>
+                <td>${c.phone || '-'}</td>
+                <td><span class="${balance > 0 ? 'bakiye-borc' : 'bakiye-alacak'}">${formatCurrency(balance)}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-info view-customer" data-id="${c.id}"><i class="fas fa-eye"></i> Ekstre</button>
+                    <button class="btn btn-sm btn-warning edit-customer" data-id="${c.id}"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger delete-customer" data-id="${c.id}"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            customerListEl.appendChild(row);
+        }
+    };
+    
+    document.getElementById('addCustomerBtn').addEventListener('click', () => {
+        saveCustomerForm.reset();
+        document.getElementById('customerId').value = '';
+        document.getElementById('customerFormTitle').textContent = 'Yeni Müşteri';
+        customerListContainer.style.display = 'none';
+        customerForm.style.display = 'block';
+    });
+    
+    document.getElementById('cancelCustomerBtn').addEventListener('click', () => {
+        customerForm.style.display = 'none';
+        customerListContainer.style.display = 'block';
+    });
+
+    saveCustomerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('customerId').value;
+        const customerData = {
+            id: id || undefined,
+            name: document.getElementById('customerName').value,
+            phone: document.getElementById('customerPhone').value,
+            email: document.getElementById('customerEmail').value,
+            address: document.getElementById('customerAddress').value,
+            taxOffice: document.getElementById('customerTaxOffice').value,
+            taxNumber: document.getElementById('customerTaxNumber').value,
+        };
+        
+        if (id) await DB.update('customers', customerData);
+        else await DB.add('customers', customerData);
+        
+        showToast(`Müşteri ${id ? 'güncellendi' : 'eklendi'}.`, 'success');
+        await renderCustomers();
+        document.getElementById('cancelCustomerBtn').click();
+    });
+
+    customerListEl.addEventListener('click', async (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
+        const id = target.dataset.id;
+        
+        if (target.classList.contains('edit-customer')) {
+            const customer = await DB.get('customers', id);
+            document.getElementById('customerId').value = customer.id;
+            document.getElementById('customerName').value = customer.name;
+            document.getElementById('customerPhone').value = customer.phone;
+            document.getElementById('customerEmail').value = customer.email;
+            document.getElementById('customerAddress').value = customer.address;
+            document.getElementById('customerTaxOffice').value = customer.taxOffice;
+            document.getElementById('customerTaxNumber').value = customer.taxNumber;
+            document.getElementById('customerFormTitle').textContent = 'Müşteriyi Düzenle';
+            customerListContainer.style.display = 'none';
+            customerForm.style.display = 'block';
+        } else if (target.classList.contains('delete-customer')) {
+            showConfirmationModal('Müşteriyi Sil', 'Bu müşteriyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.', async () => {
+                await DB.delete('customers', id);
+                showToast('Müşteri silindi.', 'success');
+                await renderCustomers();
+            });
+        } else if (target.classList.contains('view-customer')) {
+            await renderContactEkstre('customer', id);
+        }
+    });
+
+    // --- TEDARİKÇİLER MODÜLÜ ---
+    const supplierListEl = document.getElementById('suppliersList');
+    const supplierForm = document.getElementById('supplierForm');
+    const supplierListContainer = document.getElementById('supplierListContainer');
+    const saveSupplierForm = document.getElementById('saveSupplierForm');
+
+    const renderSuppliers = async () => {
+        const suppliers = await DB.getAll('suppliers');
+        supplierListEl.innerHTML = '';
+        if(suppliers.length === 0) {
+            supplierListEl.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tedarikçi bulunamadı.</td></tr>';
+            return;
+        }
+        for(const s of suppliers) {
+            const balance = await calculateBalance('supplier', s.id);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${s.name}</td>
+                <td>${s.phone || '-'}</td>
+                <td><span class="${balance > 0 ? 'bakiye-borc' : 'bakiye-alacak'}">${formatCurrency(balance)}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-info view-supplier" data-id="${s.id}"><i class="fas fa-eye"></i> Ekstre</button>
+                    <button class="btn btn-sm btn-warning edit-supplier" data-id="${s.id}"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger delete-supplier" data-id="${s.id}"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            supplierListEl.appendChild(row);
+        }
+    };
+
+    document.getElementById('addSupplierBtn').addEventListener('click', () => {
+        saveSupplierForm.reset();
+        document.getElementById('supplierId').value = '';
+        document.getElementById('supplierFormTitle').textContent = 'Yeni Tedarikçi';
+        supplierListContainer.style.display = 'none';
+        supplierForm.style.display = 'block';
+    });
+
+    document.getElementById('cancelSupplierBtn').addEventListener('click', () => {
+        supplierForm.style.display = 'none';
+        supplierListContainer.style.display = 'block';
+    });
+
+    saveSupplierForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('supplierId').value;
+        const supplierData = {
+            id: id || undefined,
+            name: document.getElementById('supplierName').value,
+            phone: document.getElementById('supplierPhone').value,
+            email: document.getElementById('supplierEmail').value,
+        };
+        
+        if (id) await DB.update('suppliers', supplierData);
+        else await DB.add('suppliers', supplierData);
+        
+        showToast(`Tedarikçi ${id ? 'güncellendi' : 'eklendi'}.`, 'success');
+        await renderSuppliers();
+        document.getElementById('cancelSupplierBtn').click();
+    });
+
+    supplierListEl.addEventListener('click', async (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
+        const id = target.dataset.id;
+        
+        if (target.classList.contains('edit-supplier')) {
+            const supplier = await DB.get('suppliers', id);
+            document.getElementById('supplierId').value = supplier.id;
+            document.getElementById('supplierName').value = supplier.name;
+            document.getElementById('supplierPhone').value = supplier.phone;
+            document.getElementById('supplierEmail').value = supplier.email;
+            document.getElementById('supplierFormTitle').textContent = 'Tedarikçiyi Düzenle';
+            supplierListContainer.style.display = 'none';
+            supplierForm.style.display = 'block';
+        } else if (target.classList.contains('delete-supplier')) {
+            showConfirmationModal('Tedarikçiyi Sil', 'Bu tedarikçiyi silmek istediğinizden emin misiniz?', async () => {
+                await DB.delete('suppliers', id);
+                showToast('Tedarikçi silindi.', 'success');
+                await renderSuppliers();
+            });
+        } else if (target.classList.contains('view-supplier')) {
+            await renderContactEkstre('supplier', id);
+        }
+    });
+
+    // --- ÜRÜNLER MODÜLÜ ---
+    const productListEl = document.getElementById('productsList');
+    const productForm = document.getElementById('productForm');
+    const productListContainer = document.getElementById('productListContainer');
+    const productHistoryContainer = document.getElementById('productHistoryContainer');
+    const saveProductForm = document.getElementById('saveProductForm');
+    const stockPurchaseContainer = document.getElementById('stockPurchaseContainer');
+
+    const renderProducts = async () => {
+        const searchTerm = document.getElementById('productSearchInput').value.toLowerCase();
+        const sortValue = document.getElementById('productSortSelect').value;
+
+        let products = await DB.getAll('products');
+
+        if (searchTerm) {
+            products = products.filter(p => p.name.toLowerCase().includes(searchTerm) || (p.code && p.code.toLowerCase().includes(searchTerm)));
+        }
+
+        products.sort((a, b) => {
+            switch(sortValue) {
+                case 'name-desc': return b.name.localeCompare(a.name);
+                case 'stock-asc': return a.stock - b.stock;
+                case 'stock-desc': return b.stock - a.stock;
+                default: return a.name.localeCompare(b.name);
+            }
+        });
+
+        productListEl.innerHTML = '';
+        if (products.length === 0) {
+            productListEl.innerHTML = '<tr><td colspan="4" style="text-align:center;">Ürün bulunamadı.</td></tr>';
+            return;
+        }
+        products.forEach(p => {
+            const row = document.createElement('tr');
+            row.className = 'product-history-clickable-row';
+            row.dataset.id = p.id;
+            row.innerHTML = `
+                <td><span class="product-name-display">${p.name}</span><br><small>${p.code || ''}</small></td>
+                <td>${p.stock} adet</td>
+                <td>${formatCurrency(p.sellPrice)}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning edit-product" data-id="${p.id}"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger delete-product" data-id="${p.id}"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            productListEl.appendChild(row);
+        });
+        await populateProductDropdowns();
+    };
+
+    document.getElementById('productSearchInput').addEventListener('input', renderProducts);
+    document.getElementById('productSortSelect').addEventListener('change', renderProducts);
+
+    const populateSupplierDropdowns = async () => {
+        const suppliers = await DB.getAll('suppliers');
+        const supplierDropdowns = document.querySelectorAll('#productSupplier, #purchaseSupplier');
+        supplierDropdowns.forEach(dropdown => {
+            dropdown.innerHTML = '<option value="">Tedarikçi Seçin</option>';
+            suppliers.forEach(s => {
+                dropdown.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+            });
+        });
+    };
+    
+    const populateProductDropdowns = async () => {
+        const products = await DB.getAll('products');
+        const productDropdowns = document.querySelectorAll('.product-select');
+        productDropdowns.forEach(dropdown => {
+            const selectedValue = dropdown.value;
+            dropdown.innerHTML = '<option value="">Ürün Seçin</option>';
+            products.forEach(p => {
+                dropdown.innerHTML += `<option value="${p.id}" data-price="${p.buyPrice || 0}"><span class="product-name-display">${p.name}</span></option>`;
+            });
+            dropdown.value = selectedValue;
+        });
+    }
+
+    document.getElementById('addProductBtn').addEventListener('click', async () => {
+        saveProductForm.reset();
+        document.getElementById('productId').value = '';
+        document.getElementById('productFormTitle').textContent = 'Yeni Ürün';
+        await populateSupplierDropdowns();
+        productListContainer.style.display = 'none';
+        productForm.style.display = 'block';
+    });
+    
+    document.getElementById('cancelProductBtn').addEventListener('click', () => {
+        productForm.style.display = 'none';
+        productListContainer.style.display = 'block';
+    });
+
+    saveProductForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('productId').value;
+        const productData = {
+            id: id || undefined,
+            name: document.getElementById('productName').value,
+            code: document.getElementById('productCode').value,
+            supplierId: document.getElementById('productSupplier').value,
+            buyPrice: parseFloat(document.getElementById('productBuyPrice').value) || 0,
+            sellPrice: parseFloat(document.getElementById('productSellPrice').value) || 0,
+            recommendedPrice: parseFloat(document.getElementById('productRecommendedPrice').value) || 0,
+            stock: parseInt(document.getElementById('productStock').value) || 0,
+            expiryDate: document.getElementById('productExpiryDate').value,
+            imageUrl: document.getElementById('productImageUrl').value,
+        };
+
+        if (id) await DB.update('products', productData);
+        else await DB.add('products', productData);
+        
+        showToast(`Ürün ${id ? 'güncellendi' : 'eklendi'}.`, 'success');
+        await renderProducts();
+        document.getElementById('cancelProductBtn').click();
+    });
+    
+    productListEl.addEventListener('click', async (e) => {
+        const row = e.target.closest('tr.product-history-clickable-row');
+        const button = e.target.closest('button');
+
+        if(button) {
+            e.stopPropagation();
+            const id = button.dataset.id;
+            if (button.classList.contains('edit-product')) {
+                const product = await DB.get('products', id);
+                await populateSupplierDropdowns();
+                document.getElementById('productId').value = product.id;
+                document.getElementById('productName').value = product.name;
+                document.getElementById('productCode').value = product.code;
+                document.getElementById('productSupplier').value = product.supplierId;
+                document.getElementById('productBuyPrice').value = product.buyPrice;
+                document.getElementById('productSellPrice').value = product.sellPrice;
+                document.getElementById('productRecommendedPrice').value = product.recommendedPrice;
+                document.getElementById('productStock').value = product.stock;
+                document.getElementById('productExpiryDate').value = product.expiryDate;
+                document.getElementById('productImageUrl').value = product.imageUrl;
+                document.getElementById('productFormTitle').textContent = 'Ürünü Düzenle';
+                productListContainer.style.display = 'none';
+                productHistoryContainer.style.display = 'none';
+                productForm.style.display = 'block';
+            } else if (button.classList.contains('delete-product')) {
+                showConfirmationModal('Ürünü Sil', 'Bu ürünü silmek istediğinizden emin misiniz?', async () => {
+                    await DB.delete('products', id);
+                    showToast('Ürün silindi.', 'success');
+                    await renderProducts();
+                });
+            }
+        } else if (row) {
+            await renderProductHistory(row.dataset.id);
+        }
+    });
+
+    // Stok Satın Alma
+    document.getElementById('purchaseStockBtn').addEventListener('click', async () => {
+        document.getElementById('saveStockPurchaseForm').reset();
+        document.getElementById('purchaseItemsTable').querySelector('tbody').innerHTML = '';
+        await addPurchaseItemRow();
+        await populateSupplierDropdowns();
+        document.getElementById('purchaseDate').valueAsDate = new Date();
+        productListContainer.style.display = 'none';
+        stockPurchaseContainer.style.display = 'block';
+    });
+
+    document.getElementById('cancelPurchaseBtn').addEventListener('click', () => {
+        stockPurchaseContainer.style.display = 'none';
+        productListContainer.style.display = 'block';
+    });
+
+    const addPurchaseItemRow = async () => {
+        const tbody = document.getElementById('purchaseItemsTable').querySelector('tbody');
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><select class="form-control product-select"></select></td>
+            <td><input type="number" class="form-control quantity" value="1" min="1"></td>
+            <td><input type="number" step="0.01" class="form-control unit-price" value="0"></td>
+            <td class="item-total">${formatCurrency(0)}</td>
+            <td><button type="button" class="btn btn-sm btn-danger remove-item"><i class="fas fa-trash"></i></button></td>
+        `;
+        tbody.appendChild(row);
+        await populateProductDropdowns();
+    };
+    
+    document.getElementById('addPurchaseItemBtn').addEventListener('click', addPurchaseItemRow);
+
+    const updatePurchaseTotal = () => {
+        let total = 0;
+        document.getElementById('purchaseItemsTable').querySelectorAll('tbody tr').forEach(row => {
+            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+            const price = parseFloat(row.querySelector('.unit-price').value) || 0;
+            const itemTotal = quantity * price;
+            row.querySelector('.item-total').textContent = formatCurrency(itemTotal);
+            total += itemTotal;
+        });
+        document.getElementById('purchaseTotal').textContent = formatCurrency(total);
+    };
+
+    document.getElementById('purchaseItemsTable').addEventListener('input', (e) => {
+        if (e.target.matches('.quantity, .unit-price')) {
+            updatePurchaseTotal();
+        }
+    });
+
+    document.getElementById('purchaseItemsTable').addEventListener('change', (e) => {
+        if (e.target.classList.contains('product-select')) {
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            const price = selectedOption.dataset.price || 0;
+            e.target.closest('tr').querySelector('.unit-price').value = price;
+            updatePurchaseTotal();
+        }
+    });
+    
+     document.getElementById('purchaseItemsTable').addEventListener('click', e => {
+        if (e.target.closest('.remove-item')) {
+            e.target.closest('tr').remove();
+            updatePurchaseTotal();
+        }
+    });
+    
+    document.getElementById('saveStockPurchaseForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const supplierId = document.getElementById('purchaseSupplier').value;
+        if (!supplierId) return showToast('Lütfen bir tedarikçi seçin.', 'error');
+
+        const items = [];
+        let totalAmount = 0;
+        document.getElementById('purchaseItemsTable').querySelectorAll('tbody tr').forEach(row => {
+            const productId = row.querySelector('.product-select').value;
+            const quantity = parseInt(row.querySelector('.quantity').value);
+            const unitPrice = parseFloat(row.querySelector('.unit-price').value);
+            if (productId && quantity > 0 && unitPrice >= 0) {
+                items.push({ productId, quantity, unitPrice });
+                totalAmount += quantity * unitPrice;
+            }
+        });
+        
+        if (items.length === 0) return showToast('Lütfen satın alınacak en az bir ürün ekleyin.', 'error');
+        
+        for (const item of items) {
+            const product = await DB.get('products', item.productId);
+            if(product) {
+                item.productName = product.name;
+                product.stock += item.quantity;
+                product.buyPrice = item.unitPrice;
+                await DB.update('products', product);
+            }
+        }
+        
+        const newPurchase = {
+            date: document.getElementById('purchaseDate').value,
+            invoiceNumber: document.getElementById('purchaseNumber').value,
+            supplierId, items, total: totalAmount
+        };
+        await DB.add('purchases', newPurchase);
+        
+        const supplier = await DB.get('suppliers', supplierId);
+        await DB.addTransaction('expense', 'supplier', supplierId, supplier.name, 
+            `${newPurchase.invoiceNumber} nolu fatura ile mal alımı.`, 
+            totalAmount, newPurchase.date);
+
+        showToast('Stok alımı başarıyla kaydedildi.', 'success');
+        await renderProducts();
+        document.getElementById('cancelPurchaseBtn').click();
+    });
+    
+    // --- ÜRÜN GEÇMİŞİ ---
+    const renderProductHistory = async (productId) => {
+        const product = await DB.get('products', productId);
+        if(!product) return;
+
+        const allSales = await DB.getAll('sales');
+        const allPurchases = await DB.getAll('purchases');
+        const customers = await DB.getAll('customers');
+        const suppliers = await DB.getAll('suppliers');
+        
+        const historyItems = [];
+
+        allSales.forEach(sale => {
+            const foundItem = sale.items.find(item => item.productId === productId);
+            if(foundItem) {
+                const customer = customers.find(c => c.id === sale.customerId);
+                historyItems.push({
+                    date: sale.date, type: 'Satış', invoice: sale.invoiceNumber,
+                    contact: customer ? customer.name : 'Bilinmeyen Müşteri',
+                    quantity: `-${foundItem.quantity}`, price: foundItem.unitPrice
+                });
+            }
+        });
+        
+        allPurchases.forEach(purchase => {
+            const foundItem = purchase.items.find(item => item.productId === productId);
+            if(foundItem) {
+                const supplier = suppliers.find(s => s.id === purchase.supplierId);
+                historyItems.push({
+                    date: purchase.date, type: 'Alış', invoice: purchase.invoiceNumber,
+                    contact: supplier ? supplier.name : 'Bilinmeyen Tedarikçi',
+                    quantity: `+${foundItem.quantity}`, price: foundItem.unitPrice
+                });
+            }
+        });
+
+        historyItems.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+        let historyRows = historyItems.map(item => {
+            const isSale = item.type === 'Satış';
+            return `<tr>
+                        <td>${formatDate(item.date)}</td>
+                        <td><span class="status-badge" style="background-color: ${isSale ? 'var(--color-danger)' : 'var(--color-success)'}">${item.type}</span></td>
+                        <td>${item.invoice}</td>
+                        <td>${item.contact}</td>
+                        <td style="font-weight: bold; color: ${isSale ? 'var(--color-danger)' : 'var(--color-success)'}">${item.quantity}</td>
+                        <td>${formatCurrency(item.price)}</td>
+                    </tr>`;
+        }).join('');
+
+        if (historyItems.length === 0) {
+            historyRows = '<tr><td colspan="6" style="text-align:center;">Bu ürün için işlem geçmişi bulunamadı.</td></tr>';
+        }
+        
+        productHistoryContainer.innerHTML = `
+            <div class="card">
+                <div class="card-title" style="justify-content: space-between;">
+                    <span><i class="fas fa-history"></i> Ürün Geçmişi: <span class="product-name-display">${product.name}</span></span>
+                    <button class="btn btn-sm btn-danger" id="backToProductsBtn"><i class="fas fa-arrow-left"></i> Geri</button>
+                </div>
+                 <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Tarih</th><th>İşlem</th><th>Fatura No</th><th>İlgili Cari</th><th>Miktar</th><th>Birim Fiyat</th></tr></thead>
+                        <tbody>${historyRows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+        
+        productListContainer.style.display = 'none';
+        productHistoryContainer.style.display = 'block';
+        document.getElementById('backToProductsBtn').addEventListener('click', () => {
+            productHistoryContainer.style.display = 'none';
+            productListContainer.style.display = 'block';
+        });
+    };
+
+    // --- GENEL CARİ EKSTRESİ ---
+    const renderContactEkstre = async (contactType, contactId) => {
+        const isCustomer = contactType === 'customer';
+        const contact = await DB.get(isCustomer ? 'customers' : 'suppliers', contactId);
+        if (!contact) return;
+
+        const mainListContainer = document.getElementById(isCustomer ? 'customerListContainer' : 'supplierListContainer');
+        const detailContainer = document.getElementById(isCustomer ? 'customerDetailContainer' : 'supplierDetailContainer');
+        
+        mainListContainer.style.display = 'none';
+        detailContainer.innerHTML = '<div class="loading-indicator">Ekstre oluşturuluyor...</div>';
+        detailContainer.style.display = 'block';
+
+        const allSales = await DB.getAll('sales');
+        const allPurchases = await DB.getAll('purchases');
+        const allTransactions = await DB.getAll('transactions');
+        const settings = await DB.getSettings();
+
+        const sales = isCustomer ? allSales.filter(s => s.customerId === contactId) : [];
+        const purchases = !isCustomer ? allPurchases.filter(p => p.supplierId === contactId) : [];
+        const payments = allTransactions.filter(t => t.contactId === contactId && t.type === (isCustomer ? 'income' : 'expense'));
+        
+        const allItems = [
+            ...sales.map(s => ({ ...s, type: 'Satış', amount: s.total, sortDate: s.date, transactionId: s.id })),
+            ...purchases.map(p => ({...p, type: 'Alış', amount: p.total, sortDate: p.date, transactionId: p.id })),
+            ...payments.map(p => ({ ...p, type: isCustomer ? 'Tahsilat' : 'Ödeme', amount: -p.amount, sortDate: p.date, transactionId: p.id }))
+        ].sort((a,b) => new Date(a.sortDate) - new Date(b.sortDate));
+
+        let currentBalance = 0, totalBorc = 0, totalAlacak = 0;
+        
+        let islemRows = allItems.map(item => {
+            const isSaleOrPurchase = item.type === 'Satış' || item.type === 'Alış';
+            let balanceChange = isCustomer ? (item.type === 'Satış' ? item.amount : -Math.abs(item.amount)) : (item.type === 'Alış' ? item.amount : -Math.abs(item.amount));
+            currentBalance += balanceChange;
+            if (balanceChange > 0) totalBorc += balanceChange;
+            if (balanceChange < 0) totalAlacak += Math.abs(balanceChange);
+            
+            let subTable = '';
+            if (isSaleOrPurchase && item.items) {
+                 const productRows = item.items.map(p => `<tr><td class="product-name-display">${p.productName}</td><td class="text-right">${p.quantity}</td><td class="text-right">${formatCurrency(p.unitPrice)}</td><td class="text-right">${formatCurrency(p.quantity * p.unitPrice)}</td></tr>`).join('');
+                subTable = `<tr class="product-details-row"><td colspan="7"><table class="ekstre-sub-table"><thead><tr><th>Ürün</th><th class="text-right">Miktar</th><th class="text-right">Birim Fiyat</th><th class="text-right">Toplam</th></tr></thead><tbody>${productRows}</tbody></table></td></tr>`;
+            }
+            const borc = balanceChange > 0 ? formatCurrency(balanceChange) : '-';
+            const alacak = balanceChange < 0 ? formatCurrency(Math.abs(balanceChange)) : '-';
+            const invoiceButton = item.type === 'Satış' ? `<button class="btn btn-sm btn-secondary view-invoice-btn" data-id="${item.transactionId}"><i class="fas fa-receipt"></i></button>` : '';
+            return `<tr class="transaction-row"><td>${formatDate(item.sortDate)}</td><td>${item.type}</td><td>${item.invoiceNumber || item.description || ''}</td><td class="text-right">${borc}</td><td class="text-right">${alacak}</td><td class="text-right">${formatCurrency(currentBalance)}</td><td>${invoiceButton}</td></tr>${subTable}`;
+        }).join('');
+        
+        const bakiye = currentBalance;
+        let ekstreHTML = (settings.ekstreTemplate || '')
+            .replace(/{{sirket_adi}}/g, settings.appName).replace(/{{tarih}}/g, new Date().toLocaleDateString('tr-TR'))
+            .replace(/{{musteri_adi}}/g, contact.name).replace(/{{musteri_adresi}}/g, contact.address || '')
+            .replace(/{{musteri_telefon}}/g, contact.phone || '').replace(/{{musteri_vergi_dairesi}}/g, contact.taxOffice || '')
+            .replace(/{{musteri_vergi_no}}/g, contact.taxNumber || '').replace(/{{toplam_borc}}/g, formatCurrency(totalBorc))
+            .replace(/{{toplam_alacak}}/g, formatCurrency(totalAlacak)).replace(/{{genel_bakiye}}/g, formatCurrency(bakiye))
+            .replace(/{{bakiye_durum}}/g, bakiye > 0 ? 'Borç' : (bakiye < 0 ? 'Alacak' : 'Sıfır'))
+            .replace('{{islemler}}', `<table class="ekstre-table" style="width: 100%; margin-top: 20px;"><thead><tr><th>Tarih</th><th>İşlem Türü</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Bakiye</th><th></th></tr></thead><tbody>${islemRows}</tbody></table>`);
+
+        detailContainer.innerHTML = `
+            <div class="ekstre-container">
+                <div class="ekstre-actions">
+                    <button class="btn btn-danger" id="backToContactListBtn"><i class="fas fa-arrow-left"></i> Geri</button>
+                    <button class="btn btn-info" id="printEkstreBtn"><i class="fas fa-print"></i> Yazdır</button>
+                </div>
+                <div class="printable-area">${ekstreHTML}</div>
+            </div>`;
+        
+        detailContainer.addEventListener('click', async (e) => {
+            if (e.target.closest('.view-invoice-btn')) await renderInvoiceDetail(e.target.closest('.view-invoice-btn').dataset.id);
+        });
+
+        document.getElementById('backToContactListBtn').addEventListener('click', () => {
+            detailContainer.style.display = 'none';
+            mainListContainer.style.display = 'block';
+        });
+        document.getElementById('printEkstreBtn').addEventListener('click', () => window.print());
+    };
+    
+    // --- Satış Modülü ---
+    const generateNextInvoiceNumber = async () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        const prefix = `${year}.${month}.`;
+
+        const sales = await DB.getAll('sales');
+        const monthSales = sales.filter(s => s.invoiceNumber && s.invoiceNumber.startsWith(prefix));
+
+        if (monthSales.length === 0) return `${prefix}1`;
+        
+        const maxCounter = monthSales.reduce((max, s) => {
+            const counter = parseInt(s.invoiceNumber.split('.').pop()) || 0;
+            return counter > max ? counter : max;
+        }, 0);
+        return `${prefix}${maxCounter + 1}`;
+    };
+
+    const renderNewSaleForm = async () => {
+        const customers = await DB.getAll('customers');
+        document.getElementById('saleCustomer').innerHTML = '<option value="">Müşteri Seçin</option>' + customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        
+        const products = await DB.getAll('products');
+        document.getElementById('saleProductSelect').innerHTML = '<option value="">Ürün Seçin</option>' + products.map(p => `<option value="${p.id}" data-price="${p.sellPrice || 0}" data-stock="${p.stock}" data-buyprice="${p.buyPrice || 0}">${p.name} (Stok: ${p.stock})</option>`).join('');
+
+        document.getElementById('saveSaleForm').reset();
+        document.getElementById('saleDate').valueAsDate = new Date();
+        document.getElementById('saleInvoiceNumber').value = await generateNextInvoiceNumber();
+        document.getElementById('saleItemsList').innerHTML = '';
+        updateSaleTotal();
+    };
+    
+    document.getElementById('saleProductSelect').addEventListener('change', e => {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        document.getElementById('saleProductPrice').value = (!selectedOption || !selectedOption.value) ? 0 : selectedOption.dataset.price || 0;
+    });
+
+    document.getElementById('addSaleItemToListBtn').addEventListener('click', async () => {
+        const productSelect = document.getElementById('saleProductSelect');
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        const productId = productSelect.value;
+        if (!productId) return showToast('Lütfen bir ürün seçin.', 'error');
+        
+        const stock = parseInt(selectedOption.dataset.stock);
+        const quantity = parseInt(document.getElementById('saleProductQuantity').value);
+        if (stock < quantity) return showToast('Yetersiz stok!', 'error');
+
+        addSaleItemRow({
+            productId,
+            productName: selectedOption.textContent.split(' (Stok:')[0],
+            quantity,
+            unitPrice: parseFloat(document.getElementById('saleProductPrice').value),
+            buyPrice: parseFloat(selectedOption.dataset.buyprice)
+        });
+    });
+
+    document.getElementById('addNonStockItemToListBtn').addEventListener('click', () => {
+        showConfirmationModal('Stok Dışı Ürün', 'Ürün adı, adedi ve birim fiyatını girerek stokta olmayan bir ürünü ekleyebilirsiniz. Lütfen bilgileri manuel olarak girin.', () => {
+            const productName = prompt("Ürün Adı:");
+            if (!productName) return;
+            const quantity = parseInt(prompt("Adet:", "1"));
+            const unitPrice = parseFloat(prompt("Birim Fiyatı:", "0"));
+            
+            if (productName && quantity > 0 && unitPrice >= 0) {
+                 addSaleItemRow({
+                    productId: 'NONSTOCK_' + Math.random().toString(36).substr(2, 9),
+                    productName: productName.toUpperCase(),
+                    quantity, unitPrice, buyPrice: 0 // Stok dışı ürünün maliyeti 0 kabul edilir
+                });
+            } else {
+                showToast('Geçersiz giriş.', 'error');
+            }
+        });
+    });
+
+    const addSaleItemRow = (itemData) => {
+        const listBody = document.getElementById('saleItemsList');
+        const newRow = document.createElement('tr');
+        newRow.dataset.productId = itemData.productId;
+        newRow.dataset.quantity = itemData.quantity;
+        newRow.dataset.unitPrice = itemData.unitPrice;
+        newRow.dataset.buyPrice = itemData.buyPrice;
+        newRow.dataset.productName = itemData.productName;
+        
+        newRow.innerHTML = `
+            <td class="product-name-display">${itemData.productName}</td>
+            <td>${itemData.quantity}</td>
+            <td>${formatCurrency(itemData.unitPrice)}</td>
+            <td>${formatCurrency(itemData.quantity * itemData.unitPrice)}</td>
+            <td><button type="button" class="btn btn-sm btn-danger remove-sale-item"><i class="fas fa-trash"></i></button></td>
+        `;
+        listBody.appendChild(newRow);
+        updateSaleTotal();
+        
+        document.getElementById('saleProductSelect').value = '';
+        document.getElementById('saleProductQuantity').value = 1;
+        document.getElementById('saleProductPrice').value = 0;
+    }
+
+    document.getElementById('saleItemsList').addEventListener('click', e => {
+        if (e.target.closest('.remove-sale-item')) {
+            e.target.closest('tr').remove();
+            updateSaleTotal();
+        }
+    });
+
+    const updateSaleTotal = () => {
+        let total = 0;
+        document.querySelectorAll('#saleItemsList tr').forEach(row => {
+            total += (parseFloat(row.dataset.quantity) || 0) * (parseFloat(row.dataset.unitPrice) || 0);
+        });
+        document.getElementById('saleTotal').textContent = formatCurrency(total);
+    };
+    
+    document.getElementById('saveSaleForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const customerId = document.getElementById('saleCustomer').value;
+        if(!customerId) return showToast('Lütfen bir müşteri seçin.', 'error');
+
+        const rows = document.querySelectorAll('#saleItemsList tr');
+        if (rows.length === 0) return showToast('Lütfen satılacak en az bir ürün ekleyin.', 'error');
+
+        const items = [];
+        let totalAmount = 0;
+        rows.forEach(row => {
+            const itemData = {
+                productId: row.dataset.productId,
+                productName: row.dataset.productName, 
+                quantity: parseInt(row.dataset.quantity), 
+                unitPrice: parseFloat(row.dataset.unitPrice),
+                buyPrice: parseFloat(row.dataset.buyPrice)
+            };
+            items.push(itemData);
+            totalAmount += itemData.quantity * itemData.unitPrice;
+        });
+        
+        for (const item of items) {
+             if (!item.productId.startsWith('NONSTOCK_')) {
+                 const product = await DB.get('products', item.productId);
+                 product.stock -= item.quantity;
+                 await DB.update('products', product);
+             }
+        }
+
+        const newSale = {
+            date: document.getElementById('saleDate').value,
+            invoiceNumber: document.getElementById('saleInvoiceNumber').value,
+            customerId, items, total: totalAmount,
+            notes: document.getElementById('saleNotes').value || ''
+        };
+        const savedSale = await DB.add('sales', newSale);
+        
+        showToast('Satış başarıyla kaydedildi.', 'success');
+        await renderInvoiceDetail(savedSale.id);
+    });
+
+    document.getElementById('addInvoiceNotesBtn').addEventListener('click', () => {
+        document.getElementById('invoiceNotesTextarea').value = document.getElementById('saleNotes').value;
+        invoiceNotesModal.classList.add('active');
+    });
+    document.getElementById('cancelInvoiceNoteBtn').addEventListener('click', () => invoiceNotesModal.classList.remove('active'));
+    document.getElementById('saveInvoiceNoteBtn').addEventListener('click', () => {
+        document.getElementById('saleNotes').value = document.getElementById('invoiceNotesTextarea').value;
+        invoiceNotesModal.classList.remove('active');
+        showToast('Not kaydedildi.', 'success');
+    });
+
+    // --- FATURA İŞLEMLERİ ---
+    const renderInvoiceDetail = async (saleId) => {
+        const sale = await DB.get('sales', saleId);
+        if(!sale) return;
+
+        const customer = await DB.get('customers', sale.customerId);
+        const settings = await DB.getSettings();
+
+        const productRows = sale.items.map(p => `<tr><td class="product-name-display">${p.productName}</td><td style="text-align:right;">${p.quantity}</td><td style="text-align:right;">${formatCurrency(p.unitPrice)}</td><td style="text-align:right;">${formatCurrency(p.quantity * p.unitPrice)}</td></tr>`).join('');
+        const notesHTML = sale.notes ? `<div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; font-size: 10pt;"><strong>Not:</strong><br>${sale.notes.replace(/\n/g, '<br>')}</div>` : '';
+
+        let invoiceHTML = (settings.faturaTemplate || '')
+             .replace(/{{sirket_adi}}/g, settings.appName).replace(/{{tarih}}/g, formatDate(sale.date))
+             .replace(/{{fatura_no}}/g, sale.invoiceNumber).replace(/{{musteri_adi}}/g, customer.name)
+             .replace(/{{musteri_adresi}}/g, customer.address || '').replace(/{{musteri_telefon}}/g, customer.phone || '')
+             .replace(/{{musteri_vergi_dairesi}}/g, customer.taxOffice || '').replace(/{{musteri_vergi_no}}/g, customer.taxNumber || '')
+             .replace(/{{genel_toplam}}/g, formatCurrency(sale.total))
+             .replace('{{urunler}}', `<table class="ekstre-table" style="width: 100%; margin-top: 20px;"><thead><tr><th>Ürün</th><th style="text-align:right;">Miktar</th><th style="text-align:right;">Birim Fiyat</th><th style="text-align:right;">Toplam</th></tr></thead><tbody>${productRows}</tbody></table>`)
+             .replace('{{fatura_notu}}', notesHTML);
+        
+        document.getElementById('invoiceModalContent').innerHTML = `
+            <div class="invoice-container">
+                 <div class="invoice-actions">
+                    <button class="btn btn-danger" id="closeInvoiceModalBtn"><i class="fas fa-times"></i> Kapat</button>
+                    <button class="btn btn-info" id="printInvoiceBtn"><i class="fas fa-print"></i> Yazdır</button>
+                    <button class="btn btn-success" id="downloadInvoiceExcelBtn"><i class="fas fa-file-excel"></i> Excel</button>
+                    <button class="btn btn-warning" id="downloadInvoiceImageBtn"><i class="fas fa-camera"></i> Resim</button>
+                    <button class="btn" style="background-color:#25D366;" id="shareInvoiceWpBtn"><i class="fab fa-whatsapp"></i> Paylaş</button>
+                </div>
+                <div class="printable-area" id="invoicePrintArea">${invoiceHTML}</div>
+            </div>`;
+        invoiceModal.classList.add('active');
+
+        document.getElementById('closeInvoiceModalBtn').addEventListener('click', () => {
+            invoiceModal.classList.remove('active');
+            showModule('sales');
+        });
+        document.getElementById('printInvoiceBtn').addEventListener('click', () => window.print());
+        document.getElementById('downloadInvoiceExcelBtn').addEventListener('click', () => exportSaleToExcel(sale));
+        document.getElementById('downloadInvoiceImageBtn').addEventListener('click', () => downloadElementAsImage('invoicePrintArea', `fatura-${sale.invoiceNumber}.png`));
+        document.getElementById('shareInvoiceWpBtn').addEventListener('click', () => shareInvoiceViaWhatsApp(sale, customer));
+    };
+
+    const downloadElementAsImage = (elementId, fileName) => {
+        const element = document.getElementById(elementId);
+        showToast('Resim oluşturuluyor, lütfen bekleyin...', 'info');
+        html2canvas(element, {scale: 2}).then(canvas => {
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+            link.click();
+        }).catch(err => {
+            console.error("Resim oluşturma hatası:", err);
+            showToast("Resim oluşturulurken bir hata oluştu.", "error");
+        });
+    };
+
+    const shareInvoiceViaWhatsApp = (sale, customer) => {
+        let message = `*${document.querySelector('.app-name').textContent} - Satış Faturası*\n\n`
+            + `*Fatura No:* ${sale.invoiceNumber}\n`
+            + `*Tarih:* ${formatDate(sale.date)}\n`
+            + `*Müşteri:* ${customer.name}\n\n`
+            + '--- Ürünler ---\n'
+            + sale.items.map(item => `- ${item.productName}: ${item.quantity} x ${formatCurrency(item.unitPrice)}`).join('\n')
+            + '\n\n'
+            + (sale.notes ? `*Not:* ${sale.notes}\n\n` : '')
+            + `*Genel Toplam:* ${formatCurrency(sale.total)}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    };
+
+    const exportSaleToExcel = (sale) => {
+         const headers = { productName: 'Ürün Adı', quantity: 'Miktar', unitPrice: 'Birim Fiyat' };
+         const data = sale.items.map(item => ({...item})); // create a copy
+         const formattedData = data.map(item => {
+            const newItem = {};
+            for(const key in headers) newItem[headers[key]] = item[key];
+            return newItem;
+        });
+        const worksheet = XLSX.utils.json_to_sheet(formattedData);
+        XLSX.utils.sheet_add_aoa(worksheet, [["", "", "Toplam", sale.total]], { origin: -1 });
+        if(sale.notes) XLSX.utils.sheet_add_aoa(worksheet, [["Not:", sale.notes]], { origin: -1 });
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Fatura Detayı");
+        XLSX.writeFile(workbook, `Fatura-${sale.invoiceNumber}.xlsx`);
+    };
+
+
+    // --- Finans Modülü ---
+    const renderFinanceTransactions = async () => {
+        const transactions = (await DB.getAll('transactions')).sort((a, b) => new Date(b.date) - new Date(a.date));
+        const listEl = document.getElementById('financeTransactionsList');
+        listEl.innerHTML = '';
+        if (transactions.length === 0) {
+            listEl.innerHTML = '<tr><td colspan="6" style="text-align:center;">Finansal işlem bulunamadı.</td></tr>';
+            return;
+        }
+        transactions.forEach(t => {
+            const row = document.createElement('tr');
+            const isIncome = t.type === 'income';
+            row.innerHTML = `
+                <td>${formatDate(t.date)}</td>
+                <td><span class="status-badge" style="background-color: ${isIncome ? 'var(--color-success)' : 'var(--color-danger)'}">${isIncome ? 'Giriş' : 'Çıkış'}</span></td>
+                <td>${t.contactName || '-'}</td>
+                <td>${t.description}</td>
+                <td>${formatCurrency(t.amount)}</td>
+                <td><button class="btn btn-sm btn-danger delete-finance" data-id="${t.id}"><i class="fas fa-trash"></i></button></td>
+            `;
+            listEl.appendChild(row);
+        });
+    };
+
+    const setupFinanceForm = (type) => {
+        document.getElementById('saveFinanceForm').reset();
+        document.getElementById('financeId').value = '';
+        document.getElementById('financeType').value = type;
+        document.getElementById('financeFormTitle').textContent = type === 'income' ? 'Nakit Girişi (Tahsilat)' : 'Nakit Çıkışı (Ödeme)';
+        document.getElementById('financeDate').valueAsDate = new Date();
+        document.getElementById('financeForm').style.display = 'block';
+    };
+
+    document.getElementById('addIncomeBtn').addEventListener('click', () => setupFinanceForm('income'));
+    document.getElementById('addExpenseBtn').addEventListener('click', () => setupFinanceForm('expense'));
+    document.getElementById('cancelFinanceBtn').addEventListener('click', () => document.getElementById('financeForm').style.display = 'none');
+
+    document.getElementById('financeContactType').addEventListener('change', async (e) => {
+        const type = e.target.value;
+        const contactGroup = document.getElementById('financeContactSelectGroup');
+        const contactSelect = document.getElementById('financeContact');
+        
+        if (type === 'none') return contactGroup.style.display = 'none';
+        
+        const items = await DB.getAll(type === 'customer' ? 'customers' : 'suppliers');
+        contactSelect.innerHTML = `<option value="">${type === 'customer' ? 'Müşteri' : 'Tedarikçi'} Seçin</option>` + items.map(item => `<option value="${item.id}">${item.name}</option>`).join('');
+        contactGroup.style.display = 'block';
+    });
+
+    document.getElementById('saveFinanceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const contactType = document.getElementById('financeContactType').value;
+        const contactId = document.getElementById('financeContact').value;
+        let contactName = '';
+
+        if (contactType !== 'none' && contactId) {
+             const items = await DB.getAll(contactType === 'customer' ? 'customers' : 'suppliers');
+             contactName = items.find(i => i.id === contactId)?.name || '';
+        }
+
+        await DB.addTransaction(
+            document.getElementById('financeType').value, contactType, contactId, contactName,
+            document.getElementById('financeDescription').value, document.getElementById('financeAmount').value,
+            document.getElementById('financeDate').value);
+        
+        showToast('Finansal işlem kaydedildi.', 'success');
+        await renderFinanceTransactions();
+        document.getElementById('financeForm').style.display = 'none';
+    });
+
+    document.getElementById('financeTransactionsList').addEventListener('click', e => {
+        const target = e.target.closest('.delete-finance');
+        if (target) {
+             showConfirmationModal('İşlemi Sil', 'Bu finansal işlemi silmek istediğinizden emin misiniz?', async () => {
+                await DB.delete('transactions', target.dataset.id);
+                showToast('İşlem silindi.', 'success');
+                await renderFinanceTransactions();
+            });
+        }
+    });
+
+    // --- HIZLI İŞLEMLER ---
+    const quickTransactionForm = document.getElementById('quickTransactionForm');
+    
+    const openQuickTransactionModal = async (type) => {
+        quickTransactionForm.reset();
+        document.getElementById('quickTransactionDate').valueAsDate = new Date();
+        const contactTypeSelect = document.getElementById('quickTransactionContactType');
+        contactTypeSelect.value = (type === 'income') ? 'customer' : 'none';
+        document.getElementById('quickTransactionModalTitle').textContent = (type === 'income') ? 'Hızlı Tahsilat' : 'Hızlı Gider';
+        await updateQuickTransactionContacts();
+        quickTransactionModal.classList.add('active');
+    };
+
+    const updateQuickTransactionContacts = async () => {
+        const contactType = document.getElementById('quickTransactionContactType').value;
+        const contactGroup = document.getElementById('quickTransactionContactGroup');
+        const contactSelect = document.getElementById('quickTransactionContact');
+
+        if(contactType === 'none') return contactGroup.style.display = 'none';
+
+        contactGroup.style.display = 'block';
+        const items = await DB.getAll(contactType === 'customer' ? 'customers' : 'suppliers');
+        contactSelect.innerHTML = `<option value="">${contactType === 'customer' ? 'Müşteri Seçin' : 'Tedarikçi Seçin'}</option>` + items.map(item => `<option value="${item.id}">${item.name}</option>`).join('');
+    };
+
+    document.getElementById('quickTransactionContactType').addEventListener('change', updateQuickTransactionContacts);
+    ['quickIncomeBtn', 'quickExpenseBtn', 'quickIncomeBtn2', 'quickExpenseBtn2'].forEach(id => {
+        document.getElementById(id).addEventListener('click', () => openQuickTransactionModal(id.includes('Income') ? 'income' : 'expense'));
+    });
+    document.getElementById('quickTransactionCancelBtn').addEventListener('click', () => quickTransactionModal.classList.remove('active'));
+
+    quickTransactionForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const contactType = document.getElementById('quickTransactionContactType').value;
+        const contactId = document.getElementById('quickTransactionContact').value;
+        if(contactType !== 'none' && !contactId) return showToast('Lütfen ilgili cariyi seçin.', 'error');
+        
+        let contactName = '';
+        if (contactId) {
+            const items = await DB.getAll(contactType === 'customer' ? 'customers' : 'suppliers');
+            contactName = items.find(i => i.id === contactId)?.name || '';
+        }
+
+        await DB.addTransaction(
+            (contactType === 'customer') ? 'income' : 'expense',
+            contactType, contactId, contactName, 
+            document.getElementById('quickTransactionDescription').value,
+            document.getElementById('quickTransactionAmount').value,
+            document.getElementById('quickTransactionDate').value
+        );
+
+        showToast('İşlem başarıyla kaydedildi.', 'success');
+        quickTransactionModal.classList.remove('active');
+        await renderDashboard();
+    });
+
+
+    // --- Senetler Modülü ---
+    const renderPromissoryNotes = async () => {
+        const notes = await DB.getAll('promissoryNotes');
+        const customers = await DB.getAll('customers');
+        const suppliers = await DB.getAll('suppliers');
+        const listEl = document.getElementById('promissoryNotesList');
+        listEl.innerHTML = '';
+        if (notes.length === 0) {
+            listEl.innerHTML = '<tr><td colspan="8" style="text-align:center;">Kayıtlı senet bulunamadı.</td></tr>';
+            return;
+        }
+
+        notes.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate)).forEach(note => {
+            const row = document.createElement('tr');
+            const contactName = note.type === 'customer' ? (customers.find(c => c.id === note.contactId)?.name || 'Bilinmiyor') : (suppliers.find(s => s.id === note.contactId)?.name || 'Bilinmiyor');
+            let statusBadge = `<span class="status-badge status-portfolio">Portföyde</span>`;
+            if (note.status === 'paid') statusBadge = `<span class="status-badge status-paid">Ödendi</span>`;
+            if (note.status === 'protested') statusBadge = `<span class="status-badge status-protested">Protesto</span>`;
+            
+            const today = new Date(); today.setHours(0,0,0,0);
+            row.className = new Date(note.dueDate) < today && note.status === 'portfolio' ? 'payment-overdue' : '';
+
+            row.innerHTML = `
+                <td><input type="checkbox" class="note-checkbox" data-amount="${note.amount}"></td>
+                <td>${note.type === 'customer' ? 'Alınan' : 'Verilen'}</td>
+                <td>${contactName}</td><td>${formatDate(note.dueDate)}</td><td>${formatCurrency(note.amount)}</td>
+                <td>${note.description || '-'}</td><td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning edit-note" data-id="${note.id}"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger delete-note" data-id="${note.id}"><i class="fas fa-trash"></i></button>
+                </td>`;
+            listEl.appendChild(row);
+        });
+    };
+
+    document.getElementById('addPromissoryNoteBtn').addEventListener('click', () => {
+        document.getElementById('savePromissoryNoteForm').reset();
+        document.getElementById('promissoryNoteId').value = '';
+        document.getElementById('promissoryNoteFormTitle').textContent = 'Yeni Senet';
+        populatePromissoryNoteContacts();
+        document.getElementById('promissoryNoteForm').style.display = 'block';
+    });
+    document.getElementById('cancelPromissoryNoteBtn').addEventListener('click', () => document.getElementById('promissoryNoteForm').style.display = 'none');
+
+    const populatePromissoryNoteContacts = async () => {
+        const type = document.getElementById('promissoryNoteType').value;
+        const contactSelect = document.getElementById('promissoryNoteContact');
+        const contacts = await DB.getAll(type === 'customer' ? 'customers' : 'suppliers');
+        contactSelect.innerHTML = `<option value="">${type === 'customer' ? 'Müşteri Seçin' : 'Tedarikçi Seçin'}</option>` + contacts.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    };
+
+    document.getElementById('promissoryNoteType').addEventListener('change', populatePromissoryNoteContacts);
+
+    document.getElementById('savePromissoryNoteForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('promissoryNoteId').value;
+        const noteData = {
+            id: id || undefined,
+            type: document.getElementById('promissoryNoteType').value,
+            contactId: document.getElementById('promissoryNoteContact').value,
+            serial: document.getElementById('promissoryNoteSerial').value,
+            amount: parseFloat(document.getElementById('promissoryNoteAmount').value),
+            dueDate: document.getElementById('promissoryNoteDueDate').value,
+            status: document.getElementById('promissoryNoteStatus').value,
+            description: document.getElementById('promissoryNoteDescription').value,
+        };
+
+        if (!noteData.contactId || !noteData.amount || !noteData.dueDate) return showToast('Lütfen ilgili cari, tutar ve vade tarihini girin.', 'error');
+
+        if (id) await DB.update('promissoryNotes', noteData);
+        else await DB.add('promissoryNotes', noteData);
+        
+        showToast(`Senet ${id ? 'güncellendi' : 'kaydedildi'}.`, 'success');
+        await renderPromissoryNotes();
+        document.getElementById('cancelPromissoryNoteBtn').click();
+    });
+
+    document.getElementById('promissoryNotesList').addEventListener('click', async (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
+        const id = target.dataset.id;
+        
+        if (target.classList.contains('edit-note')) {
+            const note = await DB.get('promissoryNotes', id);
+            document.getElementById('promissoryNoteId').value = note.id;
+            document.getElementById('promissoryNoteType').value = note.type;
+            await populatePromissoryNoteContacts();
+            document.getElementById('promissoryNoteContact').value = note.contactId;
+            document.getElementById('promissoryNoteSerial').value = note.serial;
+            document.getElementById('promissoryNoteAmount').value = note.amount;
+            document.getElementById('promissoryNoteDueDate').value = note.dueDate;
+            document.getElementById('promissoryNoteStatus').value = note.status;
+            document.getElementById('promissoryNoteDescription').value = note.description;
+            document.getElementById('promissoryNoteFormTitle').textContent = 'Senedi Düzenle';
+            document.getElementById('promissoryNoteForm').style.display = 'block';
+        } else if (target.classList.contains('delete-note')) {
+            showConfirmationModal('Senedi Sil', 'Bu senedi silmek istediğinizden emin misiniz?', async () => {
+                await DB.delete('promissoryNotes', id);
+                showToast('Senet silindi.', 'success');
+                await renderPromissoryNotes();
+            });
+        }
+    });
+
+    const updateSelectedNotesTotal = () => {
+        let total = 0;
+        document.querySelectorAll('#promissoryNotesList .note-checkbox:checked').forEach(cb => total += parseFloat(cb.dataset.amount));
+        document.getElementById('selectedNotesTotal').textContent = `Seçili Toplam: ${formatCurrency(total)}`;
+    };
+
+    document.getElementById('promissoryNotesList').addEventListener('change', e => e.target.classList.contains('note-checkbox') && updateSelectedNotesTotal());
+    document.getElementById('selectAllNotes').addEventListener('change', e => {
+        document.querySelectorAll('#promissoryNotesList .note-checkbox').forEach(cb => cb.checked = e.target.checked);
+        updateSelectedNotesTotal();
+    });
+    document.getElementById('sumSelectedNotesBtn').addEventListener('click', updateSelectedNotesTotal);
+
+    // --- KREDİ KARTI MODÜLÜ ---
+    const renderCreditCards = async () => {
+        const cards = await DB.getAll('creditCards');
+        const listEl = document.getElementById('creditCardsList');
+        listEl.innerHTML = '';
+        if(cards.length === 0) {
+            listEl.innerHTML = '<tr><td colspan="6" style="text-align:center;">Kredi kartı bulunamadı.</td></tr>';
+            return;
+        }
+        cards.forEach(c => {
+            listEl.innerHTML += `<tr><td>${c.bank}</td><td>${c.name}</td><td>${formatCurrency(c.limit)}</td><td>Her ayın ${c.statementDay}. günü</td><td>Her ayın ${c.dueDay}. günü</td>
+                <td><button class="btn btn-sm btn-warning edit-credit-card" data-id="${c.id}"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger delete-credit-card" data-id="${c.id}"><i class="fas fa-trash"></i></button></td></tr>`;
+        });
+    };
+
+    document.getElementById('addCreditCardBtn').addEventListener('click', () => {
+        document.getElementById('saveCreditCardForm').reset();
+        document.getElementById('creditCardId').value = '';
+        document.getElementById('creditCardFormTitle').textContent = 'Yeni Kredi Kartı';
+        document.getElementById('creditCardListContainer').style.display = 'none';
+        document.getElementById('creditCardForm').style.display = 'block';
+    });
+    document.getElementById('cancelCreditCardBtn').addEventListener('click', () => {
+        document.getElementById('creditCardForm').style.display = 'none';
+        document.getElementById('creditCardListContainer').style.display = 'block';
+    });
+
+    document.getElementById('saveCreditCardForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('creditCardId').value;
+        const cardData = {
+            id: id || undefined,
+            bank: document.getElementById('creditCardBank').value,
+            name: document.getElementById('creditCardName').value,
+            limit: parseFloat(document.getElementById('creditCardLimit').value),
+            statementDay: parseInt(document.getElementById('creditCardStatementDay').value),
+            dueDay: parseInt(document.getElementById('creditCardDueDay').value),
+        };
+        
+        if (id) await DB.update('creditCards', cardData);
+        else await DB.add('creditCards', cardData);
+
+        showToast(`Kredi kartı ${id ? 'güncellendi' : 'eklendi'}.`, 'success');
+        await renderCreditCards();
+        document.getElementById('cancelCreditCardBtn').click();
+    });
+    
+    document.getElementById('creditCardsList').addEventListener('click', async (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
+        const id = target.dataset.id;
+        
+        if (target.classList.contains('edit-credit-card')) {
+            const card = await DB.get('creditCards', id);
+            document.getElementById('creditCardId').value = card.id;
+            document.getElementById('creditCardBank').value = card.bank;
+            document.getElementById('creditCardName').value = card.name;
+            document.getElementById('creditCardLimit').value = card.limit;
+            document.getElementById('creditCardStatementDay').value = card.statementDay;
+            document.getElementById('creditCardDueDay').value = card.dueDay;
+            document.getElementById('creditCardFormTitle').textContent = 'Kredi Kartını Düzenle';
+            document.getElementById('creditCardListContainer').style.display = 'none';
+            document.getElementById('creditCardForm').style.display = 'block';
+        } else if (target.classList.contains('delete-credit-card')) {
+            showConfirmationModal('Kredi Kartını Sil', 'Bu kartı silmek istediğinizden emin misiniz?', async () => {
+                await DB.delete('creditCards', id);
+                showToast('Kredi kartı silindi.', 'success');
+                await renderCreditCards();
+            });
+        }
+    });
+
+    // --- BANKA KREDİSİ MODÜLÜ ---
+    const calculateMonthlyPayment = (p, r, n) => (r === 0) ? p / n : p * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+
+    const renderBankLoans = async () => {
+        const loans = await DB.getAll('bankLoans');
+        const listEl = document.getElementById('bankLoansList');
+        listEl.innerHTML = '';
+        if(loans.length === 0) {
+            listEl.innerHTML = '<tr><td colspan="6" style="text-align:center;">Banka kredisi bulunamadı.</td></tr>';
+            return;
+        }
+        loans.forEach(loan => {
+            const monthlyPayment = calculateMonthlyPayment(loan.amount, loan.rate / 100, loan.installments);
+            listEl.innerHTML += `<tr><td>${loan.bank}</td><td>${loan.name}</td><td>${formatCurrency(loan.amount)}</td><td>${loan.installments} Ay</td><td>${formatCurrency(monthlyPayment)}</td>
+                <td><button class="btn btn-sm btn-info view-bank-loan" data-id="${loan.id}"><i class="fas fa-eye"></i> Plan</button>
+                    <button class="btn btn-sm btn-warning edit-bank-loan" data-id="${loan.id}"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger delete-bank-loan" data-id="${loan.id}"><i class="fas fa-trash"></i></button></td></tr>`;
+        });
+    };
+    
+    document.getElementById('addBankLoanBtn').addEventListener('click', () => {
+        document.getElementById('saveBankLoanForm').reset();
+        document.getElementById('bankLoanId').value = '';
+        document.getElementById('bankLoanFormTitle').textContent = 'Yeni Banka Kredisi';
+        document.getElementById('bankLoanListContainer').style.display = 'none';
+        document.getElementById('bankLoanForm').style.display = 'block';
+    });
+
+    document.getElementById('cancelBankLoanBtn').addEventListener('click', () => {
+        document.getElementById('bankLoanForm').style.display = 'none';
+        document.getElementById('bankLoanListContainer').style.display = 'block';
+    });
+
+    document.getElementById('saveBankLoanForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('bankLoanId').value;
+        const loanData = {
+            id: id || undefined,
+            bank: document.getElementById('bankLoanBank').value,
+            name: document.getElementById('bankLoanName').value,
+            amount: parseFloat(document.getElementById('bankLoanAmount').value),
+            rate: parseFloat(document.getElementById('bankLoanRate').value),
+            installments: parseInt(document.getElementById('bankLoanInstallments').value),
+            startDate: document.getElementById('bankLoanStartDate').value,
+        };
+        
+        if (id) await DB.update('bankLoans', loanData);
+        else await DB.add('bankLoans', loanData);
+
+        showToast(`Banka kredisi ${id ? 'güncellendi' : 'eklendi'}.`, 'success');
+        await renderBankLoans();
+        document.getElementById('cancelBankLoanBtn').click();
+    });
+
+    document.getElementById('bankLoansList').addEventListener('click', async e => {
+        const target = e.target.closest('button');
+        if(!target) return;
+        const id = target.dataset.id;
+        
+        if (target.classList.contains('edit-bank-loan')) {
+             const loan = await DB.get('bankLoans', id);
+             document.getElementById('bankLoanId').value = loan.id;
+             document.getElementById('bankLoanBank').value = loan.bank;
+             document.getElementById('bankLoanName').value = loan.name;
+             document.getElementById('bankLoanAmount').value = loan.amount;
+             document.getElementById('bankLoanRate').value = loan.rate;
+             document.getElementById('bankLoanInstallments').value = loan.installments;
+             document.getElementById('bankLoanStartDate').value = loan.startDate;
+             document.getElementById('bankLoanFormTitle').textContent = 'Banka Kredisi Düzenle';
+             document.getElementById('bankLoanListContainer').style.display = 'none';
+             document.getElementById('bankLoanForm').style.display = 'block';
+        } else if (target.classList.contains('delete-bank-loan')) {
+             showConfirmationModal('Krediyi Sil', 'Bu krediyi ve ilgili ödemeleri silmek istediğinizden emin misiniz?', async () => {
+                await DB.delete('bankLoans', id);
+                showToast('Kredi silindi.', 'success');
+                await renderBankLoans();
+            });
+        } else if (target.classList.contains('view-bank-loan')) {
+            await renderBankLoanDetails(id);
+        }
+    });
+    
+    const renderBankLoanDetails = async (loanId) => {
+        const loan = await DB.get('bankLoans', loanId);
+        const loanPayments = (await DB.getAll('loanPayments')).filter(p => p.loanId === loanId);
+        document.getElementById('bankLoanListContainer').style.display = 'none';
+
+        const monthlyPayment = calculateMonthlyPayment(loan.amount, loan.rate / 100, loan.installments);
+        let remainingPrincipal = loan.amount, tableRows = '';
+        
+        for (let i = 1; i <= loan.installments; i++) {
+            const interestPayment = remainingPrincipal * (loan.rate / 100);
+            const principalPayment = monthlyPayment - interestPayment;
+            remainingPrincipal -= principalPayment;
+            const paymentDate = new Date(loan.startDate);
+            paymentDate.setMonth(paymentDate.getMonth() + i - 1);
+            const isPaid = loanPayments.some(p => p.installmentNumber === i);
+
+            tableRows += `<tr class="${isPaid ? 'payment-paid' : ''}"><td>${i}</td><td>${formatDate(paymentDate.toISOString())}</td><td>${formatCurrency(monthlyPayment)}</td><td>${formatCurrency(principalPayment)}</td><td>${formatCurrency(interestPayment)}</td><td>${formatCurrency(Math.max(0, remainingPrincipal))}</td>
+                <td>${isPaid ? '<span class="status-badge status-paid">Ödendi</span>' : `<button class="btn btn-sm btn-success pay-installment-btn" data-loan-id="${loan.id}" data-installment-number="${i}" data-amount="${monthlyPayment}">Öde</button>`}</td></tr>`;
+        }
+        
+        document.getElementById('bankLoanDetailContainer').innerHTML = `
+            <div class="card">
+                <div class="card-title" style="justify-content: space-between;"><span>${loan.bank} - ${loan.name} Ödeme Planı</span><button class="btn btn-sm btn-danger" id="backToLoansBtn"><i class="fas fa-arrow-left"></i> Geri</button></div>
+                 <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>#</th><th>Ödeme Tarihi</th><th>Taksit Tutarı</th><th>Ana Para</th><th>Faiz</th><th>Kalan Ana Para</th><th>Durum</th></tr></thead>
+                        <tbody id="loanScheduleBody">${tableRows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+        document.getElementById('bankLoanDetailContainer').style.display = 'block';
+        document.getElementById('backToLoansBtn').addEventListener('click', () => {
+            document.getElementById('bankLoanDetailContainer').style.display = 'none';
+            document.getElementById('bankLoanListContainer').style.display = 'block';
+        });
+    };
+
+    document.getElementById('bankLoanDetailContainer').addEventListener('click', e => {
+        const target = e.target.closest('.pay-installment-btn');
+        if(target) {
+            const { loanId, installmentNumber, amount } = target.dataset;
+            showConfirmationModal('Taksit Öde', `${installmentNumber}. taksiti (${formatCurrency(parseFloat(amount))}) ödemek istediğinizden emin misiniz?`, async () => {
+                const loan = await DB.get('bankLoans', loanId);
+                await DB.add('loanPayments', { loanId, installmentNumber: parseInt(installmentNumber), paymentDate: new Date().toISOString().split('T')[0], amount: parseFloat(amount) });
+                await DB.addTransaction('expense', 'bankLoan', loanId, loan.name, `${installmentNumber}. taksit ödemesi`, amount, new Date().toISOString().split('T')[0]);
+                showToast('Taksit ödendi.', 'success');
+                await renderBankLoanDetails(loanId);
+            });
+        }
+    });
+
+
+    // --- Raporlar Modülü ---
+    let monthlySalesReportChart = null;
+
+    const getDateRangeFromFilter = () => {
+        const filter = document.getElementById('reportDateFilter').value;
+        const now = new Date();
+        let start = new Date(now);
+        let end = new Date(now);
+
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+
+        switch(filter) {
+            case 'today': break;
+            case 'thisWeek': start.setDate(start.getDate() - start.getDay() + 1); break;
+            case 'thisMonth': start.setDate(1); break;
+            case 'lastMonth':
+                start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                end = new Date(now.getFullYear(), now.getMonth(), 0);
+                break;
+            case 'last3Months': start.setMonth(start.getMonth() - 3); break;
+            case 'last6Months': start.setMonth(start.getMonth() - 6); break;
+            case 'last1Year': start.setFullYear(start.getFullYear() - 1); break;
+            case 'lastYear':
+                start = new Date(now.getFullYear() - 1, 0, 1);
+                end = new Date(now.getFullYear() - 1, 11, 31);
+                break;
+            case 'custom':
+                start = new Date(document.getElementById('reportStartDate').value);
+                end = new Date(document.getElementById('reportEndDate').value);
+                end.setHours(23, 59, 59, 999);
+                break;
+        }
+        return { start, end };
+    };
+
+    const renderReports = async () => {
+        const { start, end } = getDateRangeFromFilter();
+        
+        const allSales = await DB.getAll('sales');
+        const allCustomers = await DB.getAll('customers');
+
+        const filteredSales = allSales.filter(s => {
+            const saleDate = new Date(s.date);
+            return saleDate >= start && saleDate <= end;
+        });
+
+        // Stats
+        let totalRevenue = 0, totalProfit = 0;
+        const customerProfits = {}, productProfits = {};
+
+        filteredSales.forEach(sale => {
+            let saleProfit = 0;
+            totalRevenue += sale.total;
+            sale.items.forEach(item => {
+                const itemProfit = (item.unitPrice - item.buyPrice) * item.quantity;
+                saleProfit += itemProfit;
+                
+                if (!productProfits[item.productName]) productProfits[item.productName] = 0;
+                productProfits[item.productName] += itemProfit;
+            });
+            totalProfit += saleProfit;
+            if (!customerProfits[sale.customerId]) customerProfits[sale.customerId] = 0;
+            customerProfits[sale.customerId] += saleProfit;
+        });
+
+        document.getElementById('statsTotalSales').textContent = formatCurrency(totalRevenue);
+        document.getElementById('statsTotalProfit').textContent = formatCurrency(totalProfit);
+        const profitMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(2) : 0;
+        document.getElementById('statsProfitMargin').textContent = `Kâr Oranı: %${profitMargin}`;
+        document.getElementById('statsCustomerCount').textContent = allCustomers.length;
+        
+        let totalReceivables = 0;
+        for(const c of allCustomers) {
+            const balance = await calculateBalance('customer', c.id);
+            if(balance > 0) totalReceivables += balance;
+        }
+        document.getElementById('statsTotalReceivables').textContent = formatCurrency(totalReceivables);
+        
+        // Top Lists
+        const topCustomers = Object.entries(customerProfits).sort(([,a],[,b]) => b-a).slice(0,5);
+        document.getElementById('topCustomersReport').innerHTML = topCustomers.map(([id, profit]) => `<tr><td>${allCustomers.find(c=>c.id===id)?.name || 'Bilinmiyor'}</td><td>${formatCurrency(profit)}</td></tr>`).join('');
+        
+        const topProducts = Object.entries(productProfits).sort(([,a],[,b]) => b-a).slice(0,5);
+        document.getElementById('topProductsReport').innerHTML = topProducts.map(([name, profit]) => `<tr><td class="product-name-display">${name}</td><td>${formatCurrency(profit)}</td></tr>`).join('');
+
+        // Chart
+        const monthlyData = {};
+        const monthNames = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
+        filteredSales.forEach(sale => {
+            const date = new Date(sale.date);
+            const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+            if (!monthlyData[monthKey]) monthlyData[monthKey] = { total: 0, label: `${monthNames[date.getMonth()]} ${date.getFullYear()}`};
+            monthlyData[monthKey].total += sale.total;
+        });
+        const sortedKeys = Object.keys(monthlyData).sort();
+        const labels = sortedKeys.map(key => monthlyData[key].label);
+        const data = sortedKeys.map(key => monthlyData[key].total);
+        const ctx = document.getElementById('monthlySalesReportChart').getContext('2d');
+        if (monthlySalesReportChart) monthlySalesReportChart.destroy();
+        monthlySalesReportChart = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Aylık Satış Tutarı (₺)', data, backgroundColor: 'rgba(37, 99, 235, 0.6)', borderColor: 'rgba(37, 99, 235, 1)', borderWidth: 1 }] }, options: { responsive: true, scales: { y: { beginAtZero: true } } } });
+    };
+
+    document.getElementById('reportDateFilter').addEventListener('change', e => {
+        const customDates = document.getElementById('reportStartDate').parentElement;
+        if (e.target.value === 'custom') {
+            document.getElementById('reportStartDate').style.display = 'block';
+            document.getElementById('reportEndDate').style.display = 'block';
+        } else {
+            document.getElementById('reportStartDate').style.display = 'none';
+            document.getElementById('reportEndDate').style.display = 'none';
+            renderReports();
+        }
+    });
+    document.getElementById('reportStartDate').addEventListener('change', renderReports);
+    document.getElementById('reportEndDate').addEventListener('change', renderReports);
+
+    // --- Ayarlar Modülü ---
+    const renderSettings = async () => {
+        const settings = await DB.getSettings();
+        document.getElementById('settingAppName').value = settings.appName || '';
+        document.getElementById('settingAppLogo').value = settings.appLogo || '';
+        document.getElementById('templateSelector').dispatchEvent(new Event('change'));
+        renderColorSettings(settings.colors);
+        renderIconColorSettings(settings.navIconColors);
+    };
+
+    document.getElementById('settingsForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const settings = await DB.getSettings();
+        settings.appName = document.getElementById('settingAppName').value;
+        settings.appLogo = document.getElementById('settingAppLogo').value;
+        await DB.setSettings(settings);
+        await applySettings();
+        showToast('Ayarlar kaydedildi.', 'success');
+    });
+    
+    // Şablon Editörü
+    const templateSelector = document.getElementById('templateSelector');
+    const templateEditor = document.getElementById('templateEditor');
+    const templateInsertVariable = document.getElementById('templateInsertVariable');
+
+    const templateVariables = {
+        ekstre: [
+            { group: 'Şirket Bilgileri', value: '{{sirket_adi}}', text: 'Şirket Adı' },
+            { group: 'Şirket Bilgileri', value: '{{tarih}}', text: 'Tarih' },
+            { group: 'Müşteri Bilgileri', value: '{{musteri_adi}}', text: 'Cari Adı' },
+            { group: 'Müşteri Bilgileri', value: '{{musteri_adresi}}', text: 'Adres' },
+            { group: 'Müşteri Bilgileri', value: '{{musteri_telefon}}', text: 'Telefon' },
+            { group: 'Müşteri Bilgileri', value: '{{musteri_vergi_dairesi}}', text: 'Vergi Dairesi' },
+            { group: 'Müşteri Bilgileri', value: '{{musteri_vergi_no}}', text: 'Vergi No' },
+            { group: 'Tablo ve Toplamlar', value: '{{islemler}}', text: 'İşlemler Tablosu' },
+            { group: 'Tablo ve Toplamlar', value: '{{toplam_borc}}', text: 'Toplam Borç' },
+            { group: 'Tablo ve Toplamlar', value: '{{toplam_alacak}}', text: 'Toplam Alacak' },
+            { group: 'Tablo ve Toplamlar', value: '{{genel_bakiye}}', text: 'Genel Bakiye' },
+            { group: 'Tablo ve Toplamlar', value: '{{bakiye_durum}}', text: 'Bakiye Durumu' },
+        ],
+        fatura: [
+            { group: 'Şirket Bilgileri', value: '{{sirket_adi}}', text: 'Şirket Adı' },
+            { group: 'Fatura Bilgileri', value: '{{tarih}}', text: 'Tarih' },
+            { group: 'Fatura Bilgileri', value: '{{fatura_no}}', text: 'Fatura No' },
+            { group: 'Müşteri Bilgileri', value: '{{musteri_adi}}', text: 'Müşteri Adı' },
+            { group: 'Müşteri Bilgileri', value: '{{musteri_adresi}}', text: 'Adres' },
+            { group: 'Müşteri Bilgileri', value: '{{musteri_telefon}}', text: 'Telefon' },
+            { group: 'Müşteri Bilgileri', value: '{{musteri_vergi_dairesi}}', text: 'Vergi Dairesi' },
+            { group: 'Müşteri Bilgileri', value: '{{musteri_vergi_no}}', text: 'Vergi No' },
+            { group: 'Tablo ve Toplamlar', value: '{{urunler}}', text: 'Ürünler Tablosu' },
+            { group: 'Tablo ve Toplamlar', value: '{{genel_toplam}}', text: 'Genel Toplam' },
+            { group: 'Tablo ve Toplamlar', value: '{{fatura_notu}}', text: 'Fatura Notu' },
+        ]
+    };
+    
+    templateSelector.addEventListener('change', async () => {
+        const selected = templateSelector.value;
+        const settings = await DB.getSettings();
+        templateEditor.value = settings[`${selected}Template`] || '';
+
+        templateInsertVariable.innerHTML = '<option value="">Değişken Ekle...</option>';
+        const variables = templateVariables[selected];
+        const groups = [...new Set(variables.map(v => v.group))];
+        groups.forEach(group => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = group;
+            variables.filter(v => v.group === group).forEach(v => {
+                const option = document.createElement('option');
+                option.value = v.value;
+                option.textContent = v.text;
+                optgroup.appendChild(option);
+            });
+            templateInsertVariable.appendChild(optgroup);
+        });
+    });
+
+    templateInsertVariable.addEventListener('change', (e) => {
+        const variable = e.target.value;
+        if(!variable) return;
+        const start = templateEditor.selectionStart;
+        const end = templateEditor.selectionEnd;
+        templateEditor.value = templateEditor.value.substring(0, start) + variable + templateEditor.value.substring(end);
+        templateEditor.focus();
+        templateEditor.selectionEnd = start + variable.length;
+        e.target.value = '';
+    });
+
+    document.getElementById('saveTemplateBtn').addEventListener('click', async () => {
+        const selected = templateSelector.value;
+        const settings = await DB.getSettings();
+        settings[`${selected}Template`] = templateEditor.value;
+        await DB.setSettings(settings);
+        showToast('Şablon kaydedildi.', 'success');
+    });
+    
+    // Renk Ayarları
+    const renderColorSettings = (savedColors = {}) => {
+        const container = document.getElementById('colorSettingsContainer'); container.innerHTML = '';
+        const colorConfig = {
+            '--color-primary': 'Ana Renk', '--color-background': 'Arka Plan',
+            '--color-secondary': 'Kart Rengi', '--color-text': 'Metin',
+            '--color-danger': 'Hata/Borç', '--color-success': 'Başarı/Alacak',
+        };
+        for (const key in colorConfig) {
+            const savedColor = savedColors[key] || getComputedStyle(document.documentElement).getPropertyValue(key).trim();
+            container.innerHTML += `<div class="form-group form-group-half"><label for="color-${key}">${colorConfig[key]}</label><input type="color" id="color-${key}" class="form-control" data-key="${key}" value="${savedColor}"></div>`;
+        }
+    };
+    const renderIconColorSettings = (savedColors = {}) => {
+        const container = document.getElementById('iconColorSettingsContainer'); container.innerHTML = '';
+        document.querySelectorAll('#mainNav a').forEach(link => {
+            const module = link.dataset.module || 'logout';
+            const text = link.querySelector('span').textContent;
+            const savedColor = savedColors[module] || '';
+            container.innerHTML += `<div class="form-group form-group-half"><label for="icon-color-${module}">${text}</label><input type="color" id="icon-color-${module}" class="form-control" data-module="${module}" value="${savedColor}"></div>`;
+        });
+    };
+    
+    document.getElementById('colorSettingsContainer').addEventListener('input', e => {
+        if(e.target.type === 'color') document.documentElement.style.setProperty(e.target.dataset.key, e.target.value);
+    });
+    document.getElementById('saveColorsBtn').addEventListener('click', async () => {
+        const settings = await DB.getSettings();
+        settings.colors = settings.colors || {};
+        document.querySelectorAll('#colorSettingsContainer input[type="color"]').forEach(input => settings.colors[input.dataset.key] = input.value);
+        await DB.setSettings(settings);
+        showToast('Renkler kaydedildi.', 'success');
+    });
+    document.getElementById('resetColorsBtn').addEventListener('click', async () => {
+        const settings = await DB.getSettings();
+        settings.colors = {};
+        await DB.setSettings(settings);
+        await applySettings();
+        await renderColorSettings();
+        showToast('Renkler varsayılana sıfırlandı.', 'success');
+    });
+    document.getElementById('saveIconColorsBtn').addEventListener('click', async () => {
+        const settings = await DB.getSettings();
+        settings.navIconColors = {};
+        document.querySelectorAll('#iconColorSettingsContainer input[type="color"]').forEach(input => {
+            if (input.value) settings.navIconColors[input.dataset.module] = input.value;
+        });
+        await DB.setSettings(settings);
+        await applySettings();
+        showToast('İkon renkleri kaydedildi.', 'success');
+    });
+
+    // --- Veri Yönetimi ---
+    document.getElementById('backupDataBtn').addEventListener('click', async () => {
+        const allData = {};
+        for(const storeName of DB._stores) allData[storeName] = await DB.getAll(storeName);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(allData, null, 2)], {type: "application/json"}));
+        a.download = `muhasis_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showToast('Veriler başarıyla yedeklendi.', 'success');
+    });
+    
+    document.getElementById('restoreDataBtn').addEventListener('click', () => document.getElementById('restoreFileInput').click());
+
+    document.getElementById('restoreFileInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const restoredData = JSON.parse(event.target.result);
+                showConfirmationModal('Verileri Geri Yükle', 'Mevcut tüm verileriniz silinecek ve yedek dosyasındaki verilerle değiştirilecektir. Emin misiniz?', async () => {
+                    for(const storeName of DB._stores) {
+                        const store = await DB._getStore(storeName, 'readwrite');
+                        await new Promise((resolve, reject) => { const r = store.clear(); r.onsuccess = resolve; r.onerror = reject; });
+                        if (restoredData[storeName]) {
+                            for(const item of restoredData[storeName]) await store.put(item);
+                        }
+                    }
+                    showToast('Veriler başarıyla geri yüklendi.', 'success');
+                    await applySettings();
+                    await renderDashboard();
+                });
+            } catch (error) { showToast('Geçersiz yedek dosyası.', 'error'); }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    });
+
+    document.getElementById('resetDataBtn').addEventListener('click', () => {
+        showConfirmationModal('Tüm Verileri Sıfırla', 'BU İŞLEM GERİ ALINAMAZ! Tüm veriler kalıcı olarak silinecektir. Emin misiniz?', async () => {
+             for(const storeName of DB._stores) {
+                const store = await DB._getStore(storeName, 'readwrite');
+                await new Promise((resolve, reject) => { const r = store.clear(); r.onsuccess=resolve; r.onerror=reject; });
+            }
+            await DB.getSettings(); // Re-create default settings
+            showToast('Tüm veriler sıfırlandı.', 'success');
+            await applySettings();
+            await renderDashboard();
+        });
+    });
+
+    // --- EXCEL İŞLEMLERİ ---
+    const exportToExcel = (data, fileName, sheetName, headers) => {
+        const formattedData = data.map(item => {
+            const newItem = {};
+            for(const key in headers) newItem[headers[key]] = item[key];
+            return newItem;
+        });
+        const worksheet = XLSX.utils.json_to_sheet(formattedData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+        XLSX.writeFile(workbook, fileName);
+    };
+
+    document.getElementById('exportCustomersExcel').addEventListener('click', async () => {
+        const customers = await DB.getAll('customers');
+        exportToExcel(customers, 'Musteriler.xlsx', 'Müşteriler', {name: 'Ad Soyad/Firma', phone: 'Telefon', email: 'E-posta', address: 'Adres', taxOffice: 'Vergi Dairesi', taxNumber: 'Vergi No / TC'});
+    });
+    document.getElementById('exportSuppliersExcel').addEventListener('click', async () => {
+        const suppliers = await DB.getAll('suppliers');
+        exportToExcel(suppliers, 'Tedarikciler.xlsx', 'Tedarikçiler', {name: 'Firma Adı', phone: 'Telefon', email: 'E-posta'});
+    });
+    document.getElementById('exportProductsExcel').addEventListener('click', async () => {
+        const products = await DB.getAll('products');
+        exportToExcel(products, 'Urunler.xlsx', 'Ürünler', { name: 'Ürün Adı', code: 'Ürün Kodu', stock: 'Stok', buyPrice: 'Alış Fiyatı', sellPrice: 'Satış Fiyatı' });
+    });
+
+    document.getElementById('importDataExcelBtn').addEventListener('click', () => document.getElementById('importExcelInput').click());
+    document.getElementById('importExcelInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const workbook = XLSX.read(new Uint8Array(event.target.result), {type: 'array'});
+                const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                const headerMapping = { 'Ad Soyad/Firma': 'name', 'Telefon': 'phone', 'E-posta': 'email', 'Adres': 'address', 'Vergi Dairesi': 'taxOffice', 'Vergi No / TC': 'taxNumber'};
+                const mappedData = json.map(row => {
+                    const newRow = {};
+                    for(const key in row) if (headerMapping[key]) newRow[headerMapping[key]] = row[key];
+                    return newRow;
+                });
+                showConfirmationModal('Verileri İçe Aktar', `${mappedData.length} müşteri kaydı içe aktarılacak. Onaylıyor musunuz?`, async () => {
+                    for(const customer of mappedData) if (customer.name) await DB.add('customers', customer);
+                    showToast('Veriler başarıyla içe aktarıldı.', 'success');
+                    if(document.getElementById('customersModule').classList.contains('active')) await renderCustomers();
+                });
+            } catch(err) { showToast('Excel dosyası okunurken bir hata oluştu.', 'error'); console.error(err); }
+        };
+        reader.readAsArrayBuffer(file);
+        e.target.value = '';
+    });
+
+
+    // --- UYGULAMA BAŞLANGICI ---
+    const defaultEkstreTemplate = `<div style="font-family: Arial, sans-serif; font-size: 12pt; color: #333;"><div style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 15px; border-bottom: 2px solid #ccc;"><div><h3 style="margin: 0 0 5px 0;">{{musteri_adi}}</h3><p style="margin: 0; font-size: 10pt;">{{musteri_adresi}}</p><p style="margin: 0; font-size: 10pt;">{{musteri_telefon}}</p><p style="margin: 0; font-size: 10pt;">V.D: {{musteri_vergi_dairesi}} - V.N: {{musteri_vergi_no}}</p></div><div style="text-align: right;"><h2 style="color: var(--color-primary); margin: 0;">{{sirket_adi}}</h2><p style="margin: 0; font-size: 10pt;">Hesap Ekstresi</p><p style="margin: 0; font-size: 10pt;">Tarih: {{tarih}}</p></div></div>{{islemler}}<div style="display: flex; justify-content: flex-end; margin-top: 20px; padding-top: 15px; border-top: 2px solid #ccc;"><div style="width: 350px;"><div style="display: flex; justify-content: space-between; font-size: 11pt; padding: 4px 0;"><span>Toplam Borç:</span> <strong>{{toplam_borc}}</strong></div><div style="display: flex; justify-content: space-between; font-size: 11pt; padding: 4px 0;"><span>Toplam Alacak:</span> <strong>{{toplam_alacak}}</strong></div><div style="display: flex; justify-content: space-between; font-size: 14pt; padding: 8px 0; margin-top: 8px; border-top: 1px solid #999;"><span>GENEL BAKİYE:</span> <strong style="color: var(--color-primary);">{{genel_bakiye}} ({{bakiye_durum}})</strong></div></div></div></div>`.trim();
+    const defaultFaturaTemplate = `<div style="font-family: Arial, sans-serif; font-size: 12pt; color: #333;"><div style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 15px; border-bottom: 2px solid #ccc;"><div><p style="margin: 0; font-size: 10pt;"><strong>Sayın:</strong></p><h3 style="margin: 0 0 5px 0;">{{musteri_adi}}</h3><p style="margin: 0; font-size: 10pt;">{{musteri_adresi}}</p><p style="margin: 0; font-size: 10pt;">{{musteri_telefon}}</p><p style="margin: 0; font-size: 10pt;">V.D: {{musteri_vergi_dairesi}} - V.N: {{musteri_vergi_no}}</p></div><div style="text-align: right;"><h2 style="color: var(--color-primary); margin: 0;">{{sirket_adi}}</h2><p style="margin: 0; font-size: 10pt;"><strong>Fatura No:</strong> {{fatura_no}}</p><p style="margin: 0; font-size: 10pt;"><strong>Tarih:</strong> {{tarih}}</p></div></div>{{urunler}}<div style="display: flex; justify-content: flex-end; margin-top: 20px; padding-top: 15px; border-top: 2px solid #ccc;"><div style="width: 350px;"><div style="display: flex; justify-content: space-between; font-size: 16pt; padding: 8px 0; margin-top: 8px; border-top: 1px solid #999;"><span>GENEL TOPLAM:</span> <strong style="color: var(--color-primary);">{{genel_toplam}}</strong></div></div></div>{{fatura_notu}}</div>`.trim();
+
+    (async () => {
+        await DB.init();
+        await checkLogin();
+    })();
+});
+</script>
+</body>
+</html>
+
