@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Satış Makbuzu</title>
+  <script src="https://cdn.jsdelivr.net/npm/idb@7/build/umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #f9f9f9;
+      --panel-color: #fff;
+      --highlight: #ffe680;
+      --text-color: #333;
+    }
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0.5em;
+      background: var(--bg-color);
+    }
+    .container {
+      width: 80mm;
+      margin: auto;
+      background: var(--panel-color);
+      padding: 0.5em;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      font-size: 0.85em;
+      position: relative;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5em;
+    }
+    .logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+    }
+    .title {
+      font-weight: bold;
+      font-size: 1em;
+      text-align: center;
+      flex-grow: 1;
+    }
+    .settings-icon {
+      font-size: 1.2em;
+      cursor: pointer;
+      margin-left: 6px;
+    }
+    .settings-panel {
+      display: none;
+      position: absolute;
+      top: 40px;
+      right: 0;
+      background: var(--panel-color);
+      border: 1px solid #ccc;
+      padding: 0.5em;
+      font-size: 0.75em;
+      z-index: 10;
+      width: 240px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.2);
+    }
+    .settings-panel label {
+      display: block;
+      margin: 6px 0 2px;
+      font-weight: bold;
+    }
+    .settings-panel input, .settings-panel select {
+      width: 100%;
+      padding: 4px;
+      margin-bottom: 6px;
+      font-size: 0.75em;
+    }
+    .datetime {
+      font-size: 0.75em;
+      color: #666;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .customer {
+      margin: 0.5em 0;
+      font-size: 0.85em;
+    }
+    .customer input {
+      width: 100%;
+      padding: 4px;
+      font-size: 0.85em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5em;
+    }
+    th {
+      background-color: var(--highlight);
+      padding: 4px;
+      text-align: center;
+      font-weight: bold;
+      color: #c40000;
+      text-transform: uppercase;
+      font-size: 0.8em;
+    }
+    td {
+      padding: 4px;
+      border-bottom: 1px solid #ddd;
+      height: 28px;
+      overflow: hidden;
+    }
+    td.urun {
+      text-align: left;
+      font-weight: bold;
+      width: 120px;
+      text-transform: uppercase;
+      border-right: 0.5px dashed #999;
+    }
+    td.adet, td.fiyat, td.toplam {
+      text-align: center;
+      width: 40px;
+      border-right: 0.5px dashed #999;
+    }
+    td.sil {
+      text-align: center;
+      color: #c00;
+      font-size: 0.75em;
+      cursor: pointer;
+      user-select: none;
+      width: 20px;
+    }
+    td.sil:hover {
+      color: #900;
+    }
+    td[contenteditable]:focus {
+      outline: 2px solid var(--highlight);
+      background-color: #fffbe6;
+    }
+    .summary {
+      margin-top: 0.4em;
+      text-align: center;
+      font-size: 0.8em;
+      color: var(--text-color);
+    }
+    .footer-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 0.6em;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 4px 8px;
+      font-size: 0.75em;
+      border: none;
+      border-radius: 4px;
+      background-color: var(--highlight);
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #ffdd55;
+    }
+    .totals {
+      margin-top: 0.5em;
+      font-size: 0.8em;
+      text-align: right;
+      line-height: 1.6em;
+    }
+    .totals input {
+      width: 60px;
+      text-align: right;
+    }
+    @media print {
+      .footer-buttons, td.sil, .settings-icon, .settings-panel, .customer {
+        display: none !important;
+      }
+      tr:has(td.urun:empty) {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://efkanefe.mahaal.online/_next/image?url=https%3A%2F%2Fs3.eu-west-3.amazonaws.com%2Fimages.api.invyad.com%2F2703747%2Foslf5c67db4-b456-4189-97e7-07f28aca82c9.png&w=96&q=75" alt="Logo" class="logo">
+      <div class="title" contenteditable="true">Satış Makbuzu</div>
+      <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
+    </div>
+
+    <div class="settings-panel" id="settingsPanel">
+      <label>Ana Başlık</label>
+      <input type="text" placeholder="Başlık girin" oninput="document.querySelector('.title').textContent=this.value">
+      <label>Yazdırma Boyutu</label>
+      <select>
+        <option>80mm</option>
+        <option>A4</option>
+        <option>A5</option>
+        <option>A6</option>
+        <option>Zarf</option>
+        <option>Yarım A4</option>
+      </select>
+      <label>Yön</label>
+      <select>
+        <option>Dikey</option>
+        <option>Yatay</option>
+      </select>
+      <label>Logo URL</label>
+      <input type="text" placeholder="Logo linki" oninput="document.querySelector('.logo').src=this.value">
+      <label>Arka Plan Rengi</label>
+      <input type="color" onchange="document.body.style.background=this.value">
+    </div>
+
+    <div class="datetime" id="datetime"></div>
+
+    <div class="customer">
+      <label>Müşteri Adı:</label>
+      <input type="text" id="musteriAdi" placeholder="Müşteri adı girin">
+    </div>
+
+    <table id="fatura">
+      <tr><th>Ürün Adı</th><th>Adet</th><th>Fiyat</th><th>Toplam</th><th></th></tr>
+    </table>
+
+    <div class="totals">
+      Ara Toplam: <span id="araToplam">0₺</span><br>
+      Eski Bakiye: <input type="number" id="eskiBakiye" value="0" onchange="hesapla()">₺<br>
+      <b>GENEL TOPLAM: <span id="genelToplam">0₺</span></b>
+    </div>
+
+    <div class="summary" id="ozet">0 çeşit, toplamda 0 adet ürün</div>
+
+    <div class="footer-buttons">
+      <button onclick="window.print()">🖨️ Yazdır</button>
+      <button onclick="whatsappGonder()">📤 WhatsApp</button>
+      <button onclick="jpegKaydet()">🖼️ JPEG</button>
+    </div>
+  </div>
+<script>
+  const dbPromise = idb.openDB('makbuzDB', 1, {
+    upgrade(db) {
+      db.createObjectStore('urunler', { keyPath: 'id', autoIncrement: true });
+    }
+  });
+
+  function formatDate() {
+    const d = new Date();
+    const options = { weekday: 'long', hour: '2-digit', minute: '2-digit' };
+    document.getElementById("datetime").textContent = d.toLocaleDateString('tr-TR') + " " + d.toLocaleTimeString('tr-TR', options);
+  }
+
+  function toggleSettings() {
+    const panel = document.getElementById("settingsPanel");
+    panel.style.display = panel.style.display === "block" ? "none" : "block";
+  }
+
+  async function loadData() {
+    const db = await dbPromise;
+    await db.clear('urunler'); // örnek verileri sil
+    yeniSatir();
+    hesapla();
+  }
+
+  async function saveData() {
+    const db = await dbPromise;
+    await db.clear('urunler');
+    const rows = document.querySelectorAll("#fatura tr:not(:first-child)");
+    rows.forEach(row => {
+      const urun = row.querySelector(".urun")?.textContent || "";
+      const adet = row.querySelector(".adet")?.textContent || "0";
+      const fiyat = row.querySelector(".fiyat")?.textContent || "0";
+      if (urun.trim()) db.add('urunler', { urun, adet, fiyat });
+    });
+  }
+
+  function renderRow(data = { urun: "", adet: "", fiyat: "" }) {
+    const table = document.getElementById("fatura");
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td class="urun" contenteditable="true">${data.urun}</td>
+      <td class="adet" contenteditable="true">${data.adet}</td>
+      <td class="fiyat" contenteditable="true">${data.fiyat}</td>
+      <td class="toplam">0₺</td>
+      <td class="sil" onclick="this.parentElement.remove(); hesapla(); saveData()">❌</td>
+    `;
+    table.appendChild(row);
+
+    row.querySelectorAll("[contenteditable]").forEach(cell => {
+      cell.addEventListener("input", () => {
+        hesapla();
+        saveData();
+        if (satirDolu(row) && table.lastElementChild === row) yeniSatir();
+      });
+    });
+  }
+
+  function satirDolu(row) {
+    const urun = row.querySelector(".urun").textContent.trim();
+    const adet = row.querySelector(".adet").textContent.trim();
+    const fiyat = row.querySelector(".fiyat").textContent.trim();
+    return urun && adet && fiyat;
+  }
+
+  function yeniSatir() {
+    renderRow();
+  }
+
+  function hesapla() {
+    const rows = document.querySelectorAll("#fatura tr:not(:first-child)");
+    let toplam = 0, adetToplam = 0, doluSatir = 0;
+    rows.forEach(row => {
+      const urun = row.querySelector(".urun").textContent.trim();
+      const adet = parseInt(row.querySelector(".adet").textContent) || 0;
+      const fiyat = parseFloat(row.querySelector(".fiyat").textContent) || 0;
+      const araToplam = adet * fiyat;
+      row.querySelector(".toplam").textContent = araToplam + "₺";
+      if (urun) {
+        toplam += araToplam;
+        adetToplam += adet;
+        doluSatir++;
+      }
+    });
+    document.getElementById("araToplam").textContent = toplam + "₺";
+    const eski = parseFloat(document.getElementById("eskiBakiye").value) || 0;
+    document.getElementById("genelToplam").textContent = (toplam + eski) + "₺";
+    document.getElementById("ozet").textContent = `${doluSatir} çeşit, toplamda ${adetToplam} adet ürün`;
+  }
+
+  function whatsappGonder() {
+    html2canvas(document.querySelector(".container"), {
+      scale: 2,
+      useCORS: true
+    }).then(canvas => {
+      const imgData = canvas.toDataURL("image/jpeg");
+      const win = window.open();
+      win.document.write(`<img src="${imgData}" style="width:100%">`);
+    });
+  }
+
+  function jpegKaydet() {
+    html2canvas(document.querySelector(".container"), {
+      scale: 2,
+      useCORS: true
+    }).then(canvas => {
+      const imgData = canvas.toDataURL("image/jpeg");
+      const link = document.createElement("a");
+      link.href = imgData;
+      link.download = "makbuz.jpg";
+      link.click();
+    });
+  }
+
+  formatDate();
+  loadData();
+</script>
